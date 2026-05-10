@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cayo Perico Calculator - Walvischris</title>
+    <style>
+        /* Achtergrond & Algemene Style */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            background-image: url('assets/background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #e0e0e0; 
+            overflow-x: hidden;
+        }
+
+        /* Dashboard layout */
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 100vh;
+            box-sizing: border-box;
+            padding: 40px;
+        }
+
+        .column-left {
+            flex: 0 0 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .column-right {
+            flex: 0 0 450px;
+        }
+
+        .sticky-wrapper {
+            position: sticky;
+            top: 40px;
+        }
+
+        /* Card Style */
+        .card { 
+            background: rgba(30, 30, 30, 0.85); 
+            border: 2px solid #ff8c00; 
+            width: 100%; 
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h1 {
+            font-size: 1rem;
+            margin: 0;
+            padding: 12px;
+            background: rgba(255, 140, 0, 0.25);
+            border-bottom: 2px solid #ff8c00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Grids */
+        .grid-row, .crew-grid, .total-grid {
+            display: grid;
+            border-bottom: 1px solid #ff8c00;
+            align-items: stretch;
+        }
+
+        .grid-row { grid-template-columns: 120px 1fr 90px 70px; }
+        
+        /* AANGEPAST: Kolom voor % van 70px naar 90px */
+        .crew-grid { grid-template-columns: 100px 90px 1fr; }
+        
+        .total-grid { grid-template-columns: 1fr 1fr; }
+
+        .grid-cell {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-right: 1px solid #ff8c00;
+            font-size: 0.9rem;
+        }
+
+        .grid-cell:last-child { border-right: none; }
+        .cell-icon { justify-content: center; background: rgba(0,0,0,0.4); padding: 5px; }
+        .cell-money { justify-content: flex-end; font-family: monospace; color: #ff8c00; font-weight: bold; }
+        .cell-label { font-weight: bold; }
+        .cell-info { font-size: 0.75rem; color: #aaa; justify-content: center; }
+
+        /* Inputs */
+        input, select {
+            width: 100%; height: 100%; background: transparent; border: none;
+            color: #fff; padding: 10px; outline: none; text-align: center; font-size: 1rem;
+            box-sizing: border-box;
+        }
+        select option { background-color: #1e1e1e; color: #fff; }
+        input:focus, select:focus { background: rgba(255, 140, 0, 0.2); }
+
+        .item-icon { width: 100%; max-height: 80px; object-fit: contain; }
+
+        #pct-warning {
+            background: #4a1a1a; color: #ff4444; padding: 8px;
+            text-align: center; font-size: 0.8rem; font-weight: bold; border-top: 1px solid #ff8c00;
+        }
+
+        .last-row { border-bottom: none; }
+
+        @media (max-width: 1100px) {
+            .dashboard { flex-direction: column; align-items: center; padding: 20px; }
+            .column-left, .column-right { flex: 0 0 auto; width: 100%; max-width: 550px; }
+            .column-right { order: -1; margin-bottom: 30px; }
+            .sticky-wrapper { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="column-left">
+        <!-- CARD 1: PRIMARY -->
+        <div class="card">
+            <h1>PRIMARY TARGET</h1>
+            <select id="primary-select" onchange="calculate()">
+                <option value="0">-- SELECT TARGET --</option>
+                <option value="630000">SINSIMITO TEQUILA ($630.000)</option>
+                <option value="700000">RUBY NECKLACE ($700.000)</option>
+                <option value="770000">BEARER BONDS ($770.000)</option>
+                <option value="1100000">MADRAZO FILES ($1.100.000)</option>
+                <option value="1300000">PINK DIAMOND ($1.300.000)</option>
+                <option value="1900000">PANTHER STATUE ($1.900.000)</option>
+            </select>
+        </div>
+
+        <!-- CARD 2: SECONDARY -->
+        <div class="card">
+            <h1>SECONDARY TARGETS</h1>
+            <div class="grid-row"><div class="grid-cell cell-icon"><img src="assets/cash.webp" class="item-icon"></div><div class="grid-cell cell-label">CASH</div><div class="grid-cell cell-info">78k-89k</div><div class="grid-cell"><input type="number" class="amount" data-min="78480" data-max="89420" value="0" min="0" oninput="calculate()"></div></div>
+            <div class="grid-row"><div class="grid-cell cell-icon"><img src="assets/artwork.webp" class="item-icon"></div><div class="grid-cell cell-label">ARTWORK</div><div class="grid-cell cell-info">176k-199k</div><div class="grid-cell"><input type="number" class="amount" data-min="176200" data-max="199700" value="0" min="0" oninput="calculate()"></div></div>
+            <div class="grid-row"><div class="grid-cell cell-icon"><img src="assets/wood.webp" class="item-icon"></div><div class="grid-cell cell-label">WEED</div><div class="grid-cell cell-info">145k-149k</div><div class="grid-cell"><input type="number" class="amount" data-min="145980" data-max="149265" value="0" min="0" oninput="calculate()"></div></div>
+            <div class="grid-row"><div class="grid-cell cell-icon"><img src="assets/coke.webp" class="item-icon"></div><div class="grid-cell cell-label">COCAINE</div><div class="grid-cell cell-info">220k-255k</div><div class="grid-cell"><input type="number" class="amount" data-min="220500" data-max="255000" value="0" min="0" oninput="calculate()"></div></div>
+            <div class="grid-row last-row"><div class="grid-cell cell-icon"><img src="assets/gold.webp" class="item-icon"></div><div class="grid-cell cell-label">GOLD</div><div class="grid-cell cell-info">328k-333k</div><div class="grid-cell"><input type="number" class="amount" data-min="328584" data-max="333192" value="0" min="0" oninput="calculate()"></div></div>
+        </div>
+
+        <!-- CARD 3: CREW CUT -->
+        <div class="card">
+            <h1>CREW CUT (%)</h1>
+            <div class="crew-grid">
+                <div class="grid-cell cell-label">HOST</div>
+                <div class="grid-cell"><input type="number" id="p1-pct" value="100" step="5" min="0" max="100" oninput="calculate(this)"></div>
+                <div class="grid-cell cell-money" id="p1-money"></div>
+            </div>
+            <div class="crew-grid">
+                <div class="grid-cell cell-label">PLAYER 2</div>
+                <div class="grid-cell"><input type="number" id="p2-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
+                <div class="grid-cell cell-money" id="p2-money"></div>
+            </div>
+            <div class="crew-grid">
+                <div class="grid-cell cell-label">PLAYER 3</div>
+                <div class="grid-cell"><input type="number" id="p3-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
+                <div class="grid-cell cell-money" id="p3-money"></div>
+            </div>
+            <div class="crew-grid last-row">
+                <div class="grid-cell cell-label">PLAYER 4</div>
+                <div class="grid-cell"><input type="number" id="p4-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
+                <div class="grid-cell cell-money" id="p4-money"></div>
+            </div>
+            <div id="pct-warning" style="display: none;">TOTAAL MOET 100% ZIJN!</div>
+        </div>
+    </div>
+
+    <div class="column-right">
+        <div class="sticky-wrapper">
+            <div class="card">
+                <h1>Total Loot Estimate</h1>
+                <div class="total-grid">
+                    <div class="grid-cell cell-label">MINIMUM TOTAL</div>
+                    <div class="grid-cell cell-money" style="font-size: 1.2rem;">$ <span id="res-min">0</span></div>
+                </div>
+                <div class="total-grid last-row">
+                    <div class="grid-cell cell-label">MAXIMUM TOTAL</div>
+                    <div class="grid-cell cell-money" style="font-size: 1.2rem;">$ <span id="res-max">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate(changedInput) {
+        const primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
+        let secMin = 0, secMax = 0;
+        document.querySelectorAll('.amount').forEach(input => {
+            const count = parseInt(input.value) || 0;
+            secMin += (parseFloat(input.getAttribute('data-min')) * count);
+            secMax += (parseFloat(input.getAttribute('data-max')) * count);
+        });
+        const totalMin = primaryValue + secMin;
+        const totalMax = primaryValue + secMax;
+        document.getElementById('res-min').innerText = totalMin.toLocaleString('nl-NL');
+        document.getElementById('res-max').innerText = totalMax.toLocaleString('nl-NL');
+
+        let pcts = [{id: 'p1-pct', money: 'p1-money'}, {id: 'p2-pct', money: 'p2-money'}, {id: 'p3-pct', money: 'p3-money'}, {id: 'p4-pct', money: 'p4-money'}];
+        let currentTotalPct = 0;
+        pcts.forEach(p => { currentTotalPct += (parseInt(document.getElementById(p.id).value) || 0); });
+
+        if (currentTotalPct > 100 && changedInput) {
+            changedInput.value = parseInt(changedInput.value) - (currentTotalPct - 100);
+            currentTotalPct = 100;
+        }
+
+        const warning = document.getElementById('pct-warning');
+        warning.style.display = currentTotalPct !== 100 ? 'block' : 'none';
+        if(currentTotalPct !== 100) warning.innerText = `TOTAAL IS ${currentTotalPct}%. MOET 100% ZIJN!`;
+
+        pcts.forEach(p => {
+            const val = parseInt(document.getElementById(p.id).value) || 0;
+            const display = document.getElementById(p.money);
+            if (val > 0) {
+                const mMin = Math.round(totalMin * (val / 100)).toLocaleString('nl-NL');
+                const mMax = Math.round(totalMax * (val / 100)).toLocaleString('nl-NL');
+                display.innerText = `$${mMin} - $${mMax}`;
+            } else { display.innerText = ''; }
+        });
+    }
+    calculate();
+</script>
+</body>
+</html>
