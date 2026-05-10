@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekentool - Walvischris</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
+        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: #333; }
+        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        label { flex: 1; font-weight: bold; }
+        .price { color: #666; font-size: 0.9rem; margin-right: 10px; }
+        input { width: 60px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .total-section { border-top: 2px solid #eee; margin-top: 20px; padding-top: 15px; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between; }
+        .euro { color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Boodschappen Calculator</h1>
+
+    <!-- Item 1 -->
+    <div class="row">
+        <label>Appel</label>
+        <span class="price">€4,-</span>
+        <input type="number" class="amount" data-price="4" value="0" min="0" oninput="calculate()">
+    </div>
+
+    <!-- Item 2 -->
+    <div class="row">
+        <label>Peer</label>
+        <span class="price">€3,-</span>
+        <input type="number" class="amount" data-price="3" value="0" min="0" oninput="calculate()">
+    </div>
+
+    <!-- Item 3 -->
+    <div class="row">
+        <label>Brood</label>
+        <span class="price">€6,-</span>
+        <input type="number" class="amount" data-price="6" value="0" min="0" oninput="calculate()">
+    </div>
+
+    <!-- Item 4 -->
+    <div class="row">
+        <label>Water</label>
+        <span class="price">€2,-</span>
+        <input type="number" class="amount" data-price="2" value="0" min="0" oninput="calculate()">
+    </div>
+
+    <!-- Item 5 -->
+    <div class="row">
+        <label>Toilet</label>
+        <span class="price">€500,-</span>
+        <input type="number" class="amount" data-price="500" value="0" min="0" oninput="calculate()">
+    </div>
+
+    <div class="total-section">
+        <span>Totaal:</span>
+        <span class="euro">€ <span id="total-price">0</span></span>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        let total = 0;
+        const inputs = document.querySelectorAll('.amount');
+        
+        inputs.forEach(input => {
+            const price = parseFloat(input.getAttribute('data-price'));
+            const count = parseInt(input.value) || 0;
+            total += price * count;
+        });
+
+        document.getElementById('total-price').innerText = total.toLocaleString('nl-NL');
+    }
+</script>
+
+</body>
+</html>
