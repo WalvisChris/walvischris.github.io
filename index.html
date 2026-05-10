@@ -19,61 +19,90 @@
 <body>
 
 <div class="card">
-    <h1>Boodschappen Calculator</h1>
+    <h1>Secondary Targets</h1>
 
-    <!-- Item 1 -->
+    <!-- Item 1: Cash -->
     <div class="row">
-        <label>Appel</label>
-        <span class="price">€4,-</span>
-        <input type="number" class="amount" data-price="4" value="0" min="0" oninput="calculate()">
+        <label>Cash</label>
+        <span class="info-text">Min: 78k | Max: 89k</span>
+        <input type="number" class="amount" 
+               data-min="78480" data-max="89420" 
+               value="0" min="0" oninput="calculate()">
     </div>
 
-    <!-- Item 2 -->
+    <!-- Item 2: Artwork -->
     <div class="row">
-        <label>Peer</label>
-        <span class="price">€3,-</span>
-        <input type="number" class="amount" data-price="3" value="0" min="0" oninput="calculate()">
+        <label>Artwork</label>
+        <span class="info-text">Min: 176k | Max: 199k</span>
+        <input type="number" class="amount" 
+               data-min="176200" data-max="199700" 
+               value="0" min="0" oninput="calculate()">
     </div>
 
-    <!-- Item 3 -->
+    <!-- Item 3: Wood -->
     <div class="row">
-        <label>Brood</label>
-        <span class="price">€6,-</span>
-        <input type="number" class="amount" data-price="6" value="0" min="0" oninput="calculate()">
+        <label>Wood</label>
+        <span class="info-text">Min: 145k | Max: 149k</span>
+        <input type="number" class="amount" 
+               data-min="145980" data-max="149265" 
+               value="0" min="0" oninput="calculate()">
     </div>
 
-    <!-- Item 4 -->
+    <!-- Item 4: Coke -->
     <div class="row">
-        <label>Water</label>
-        <span class="price">€2,-</span>
-        <input type="number" class="amount" data-price="2" value="0" min="0" oninput="calculate()">
+        <label>Coke</label>
+        <span class="info-text">Min: 220k | Max: 255k</span>
+        <input type="number" class="amount" 
+               data-min="220500" data-max="255000" 
+               value="0" min="0" oninput="calculate()">
     </div>
 
-    <!-- Item 5 -->
+    <!-- Item 5: Gold -->
     <div class="row">
-        <label>Toilet</label>
-        <span class="price">€500,-</span>
-        <input type="number" class="amount" data-price="500" value="0" min="0" oninput="calculate()">
+        <label>Gold</label>
+        <span class="info-text">Min: 328k | Max: 333k</span>
+        <input type="number" class="amount" 
+               data-min="328584" data-max="333192" 
+               value="0" min="0" oninput="calculate()">
     </div>
 
-    <div class="total-section">
-        <span>Totaal:</span>
-        <span class="euro">€ <span id="total-price">0</span></span>
+    <div class="results-container">
+        <div class="total-row">
+            <span class="label-text">Totaal Minimaal:</span>
+            <span class="value-text">€ <span id="total-min">0</span></span>
+        </div>
+        <div class="total-row">
+            <span class="label-text">Totaal Maximaal:</span>
+            <span class="value-text">€ <span id="total-max">0</span></span>
+        </div>
+        <div class="total-row grand-total">
+            <span class="label-text">Gemiddeld:</span>
+            <span class="value-text">€ <span id="total-avg">0</span></span>
+        </div>
     </div>
 </div>
 
 <script>
     function calculate() {
-        let total = 0;
+        let totalMin = 0;
+        let totalMax = 0;
+        
         const inputs = document.querySelectorAll('.amount');
         
         inputs.forEach(input => {
-            const price = parseFloat(input.getAttribute('data-price'));
+            const minPrice = parseFloat(input.getAttribute('data-min'));
+            const maxPrice = parseFloat(input.getAttribute('data-max'));
             const count = parseInt(input.value) || 0;
-            total += price * count;
+            
+            totalMin += minPrice * count;
+            totalMax += maxPrice * count;
         });
 
-        document.getElementById('total-price').innerText = total.toLocaleString('nl-NL');
+        const avg = (totalMin + totalMax) / 2;
+
+        document.getElementById('total-min').innerText = totalMin.toLocaleString('nl-NL');
+        document.getElementById('total-max').innerText = totalMax.toLocaleString('nl-NL');
+        document.getElementById('total-avg').innerText = Math.round(avg).toLocaleString('nl-NL');
     }
 </script>
 
