@@ -6,7 +6,6 @@
     <title>Cayo Perico Heist</title>
     <style>
         body {
-            /* Je eigen achtergrond */
             background-image: url('assets/background.jpg'); 
             background-color: #121212; 
             background-size: cover;
@@ -21,11 +20,15 @@
             overflow: hidden;
         }
 
-        /* De grote hoekige knop */
+        .button-container {
+            display: flex;
+            flex-direction: column; /* Zet ze onder elkaar */
+            gap: 20px;              /* Ruimte tussen de knoppen */
+            align-items: center;
+        }
+
         .btn {
-            background-color: #e67f0088;
             color: white;
-            border: 4px solid #ff8c00;
             padding: 25px 60px;
             font-size: 24px;
             text-transform: uppercase;
@@ -37,6 +40,17 @@
             transition: transform 0.2s;
             cursor: pointer;
             z-index: 10;
+            min-width: 300px;
+        }
+
+        .btn-orange {
+            background-color: #e67f0088;
+            border: 4px solid #ff8c00;
+        }
+
+        .btn-green {
+            background-color: #28a74588;
+            border: 4px solid #2ecc71;
         }
 
         .btn:hover {
@@ -46,6 +60,11 @@
     </style>
 </head>
 <body>
-    <a href="cayo.html" class="btn">Cayo Perico Heist</a>
+
+    <div class="button-container">
+        <a href="cayo.html" class="btn btn-orange">Cayo Perico Heist</a>
+        <a href="fingerprint.html" class="btn btn-green">Hack Fingerprint</a>
+    </div>
+
 </body>
 </html>
