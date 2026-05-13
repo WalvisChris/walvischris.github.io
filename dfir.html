@@ -111,6 +111,7 @@
             <option value="weblink">Weblink</option>
             <option value="gitreleases">Github Releases</option>
             <option value="gitcode">Github Code</option>
+            <option value="gitclone">Github Clone Repo</option>
             <option value="wsl">WSL</option>
         </select>
 
@@ -208,6 +209,47 @@
                 <option value="Timeline">Timeline</option>
             </select>
         </div>
+
+        <div id="gitCloneFields" class="hidden">
+            <label for="gitCloneURL">Repository URL:</label>
+            <input type="text" id="gitCloneURL" placeholder="Bijv. https://example.com" oninput="generateText()">
+
+            <label for="cloneDfir">DFIR category:</label>
+            <select id="cloneDfir" onchange="toggleFields(); generateText();">
+                <option value="">-- Maak een keuze --</option>
+                <option value="Artifact Analysis">Artifact Analysis</option>
+                <option value="Data Recovery">Data Recovery</option>
+                <option value="Documenting">Documenting</option>
+                <option value="Eric Zimmerman Tools">Eric Zimmerman Tools</option>
+                <option value="Hashing">Hashing</option>
+                <option value="Imaging">Imaging</option>
+                <option value="Malware Analysis">Malware Analysis</option>
+                <option value="Memory Forensics">Memory Forensics</option>
+                <option value="Mounting">Mounting</option>
+                <option value="Network Analysis">Network Analysis</option>
+                <option value="OSINT">OSINT</option>
+                <option value="Other">Other</option>
+                <option value="Password Recovery">Password Recovery</option>
+                <option value="Picture Analysis">Picture Analysis</option>
+                <option value="SANS Tools">SANS Tools</option>
+                <option value="Sysinternals">Sysinternals</option>
+                <option value="Timeline">Timeline</option>
+            </select>
+
+            <label for="cloneFolderName">Huidige Folder Naam:</label>
+            <input type="text" id="cloneFolderName" placeholder="Bijv. Pehash" oninput="generateText()">
+
+            <label class="checkbox-group">
+                <input type="checkbox" id="dependencies" onchange="generateText()"> 
+                Dependencies
+            </label>
+
+            <label for="installDependenciesCode">Dependencies code (optioneel):</label>
+            <input type="text" id="installDependenciesCode" placeholder="Bijv. pip install -r requirements" oninput="generateText()">
+
+            <label for="cloneFileName">Filename:</label>
+            <input type="text" id="cloneFileName" placeholder="Bijv. pehash.py" oninput="generateText()">
+        </div>
     </div>
 
     <div class="card">
@@ -225,12 +267,14 @@
         const weblinkDiv = document.getElementById('weblinkFields');
         const gitReleasesDiv = document.getElementById('gitReleasesFields');
         const gitCodeDiv = document.getElementById('gitCodeFields');
+        const gitCloneDiv = document.getElementById('gitCloneFields')
         
         generalDiv.classList.toggle('hidden', choice === 'weblink');
         zimmermanDiv.classList.toggle('hidden', choice !== 'zimmerman');
         weblinkDiv.classList.toggle('hidden', choice !== 'weblink');
         gitReleasesDiv.classList.toggle('hidden', choice !== 'gitreleases');
         gitCodeDiv.classList.toggle('hidden', choice !== 'gitcode');
+        gitCloneDiv.classList.toggle('hidden', choice !== 'gitclone')
     }
 
     function generateText() {
@@ -250,19 +294,26 @@
         const newFolderName = document.getElementById('newFolderName').value;
         const gitFolderName = document.getElementById('gitFolderName').value || "[FOLDERNAME]";
         const gitNewFolderName = document.getElementById('gitNewFolderName').value;
+        const cloneFolder = document.getElementById('cloneFolderName').value || "[FOLDERNAME]";
 
         const category = document.getElementById('dfir').value  || "[CATEGORY]";
         const gitCategory = document.getElementById('gitDfir').value  || "[CATEGORY]";
+        const cloneCategory = document.getElementById('cloneDfir').value || "[CATEGORY]";
 
         const interfaceType = document.getElementById('interfaceType').value;
         
         const dotnetVersion = document.getElementById('dotnetLegacy').checked ? "4" : "9";
+        const dependencies = document.getElementById('dependencies').checked;
         
         const URL = document.getElementById('URL').value || "[URL]";
         const gitReleasesURL = document.getElementById('gitReleasesURL').value || "[GITHUB_RELEASES_URL]";
         const gitCodeURL = document.getElementById('gitCodeURL').value || "[GITHUB_CODE_URL]";
+        const gitCloneURL = document.getElementById('gitCloneURL').value || "[URL]";
 
         const gitFileName = document.getElementById('gitFileName').value || "[FILENAME]";
+        const cloneFileName = document.getElementById('cloneFileName').value || "[FILENAME]";
+
+        const installDependencies = document.getElementById('installDependenciesCode').value || "pip install -r requirements.txt";
 
         let steps = [];
 
@@ -291,7 +342,7 @@
         } else if (choice === 'pypi') {
             steps.push(`Open command prompt.`);
             steps.push(`Installeer ${toolName} met "pip install ${toolName.toLowerCase()}".`);
-            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}",`);
+            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
 
         // Sysinternals
         } else if (choice === 'sysinternals') {
@@ -323,20 +374,38 @@
         
         // Github code
         } else if (choice === 'gitcode') {
-            steps.push(`Download de nieuwste versie van ${toolName} via de Github > Code > Download zip (${gitCodeURL}).`);
+            steps.push(`Download de nieuwste versie van ${toolName} via Github > Code > Download zip (${gitCodeURL}).`);
             steps.push(`Pak het bestand uit.`);
             steps.push(`Open de uitgepakte folder en verplaats het bestand "${gitFileName}" naar "C:\\Forensics\\${gitCategory}\\".`);
             steps.push(`Maak in "C:\\Forensics\\${gitCategory}\\" een nieuw tekst bestand aan.`);
             steps.push(`Type in dit bestand de regel "@python "%~dp0${gitFileName}" %*"`);
-            steps.push(`Sla dit bestand op als "${toolName}.bat".`);
+            steps.push(`Sla dit bestand op als "${toolName.toLowerCase()}.bat".`);
             steps.push(`Voeg het pad "C:\\Forensics\\${gitCategory}" toe aan PATH van de System Environment Variables.`);
             steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
+        
+        // Github clone
+        } else if (choice === 'gitclone') {
+            steps.push(`Open command prompt.`);
+            steps.push(`Move naar "${cloneCategory}" met "cd C:\\Forensics\\${cloneCategory}\\".`);
+            steps.push(`Installeer ${toolName} met "git clone ${gitCloneURL}".`);
+
+            if (dependencies) {
+                steps.push(`Move naar "${cloneFolder}" met "cd ${cloneFolder}".`);
+                steps.push(`Installeer de dependencies met "${installDependencies}".`);
+            }
+
+            steps.push(`Maak in "C:\\Forensics\\${cloneCategory}\\" een nieuw tekst bestand aan.`);
+            steps.push(`Type in dit bestand de regel "@cd /d "%~dp0${cloneFolder}" && python ${cloneFileName} %*"`);
+            steps.push(`Sla dit bestand op als "${toolName.toLowerCase()}.bat".`);
+            steps.push(`Voeg het pad "C:\\Forensics\\${cloneCategory}" toe aan PATH van de System Environment Variables.`);
+
+            steps.push(`Te gebruiken als command line tool met "wsl ${toolName.toLowerCase()}".`);
 
         // WSL
         } else if (choice === 'wsl') {
             steps.push(`Open WSL.`);
             steps.push(`Installeer ${toolName} met "sudo apt install ${toolName.toLowerCase()}".`);
-            steps.push(`Te gebruiken als command line tool met "wsl ${toolName.toLowerCase()}",`);
+            steps.push(`Te gebruiken als command line tool met "wsl ${toolName.toLowerCase()}".`);
         }
 
         const resultText = steps.map((step, index) => `${index + 1}. ${step}`).join('\n');
