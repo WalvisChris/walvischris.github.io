@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFIR Tool Install Generator</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 25px;
+            flex: 1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #bb86fc;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #b0b0b0;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #2c2c2c;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .output-area {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #bb86fc;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 250px;
+            color: #ffffff;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #bb86fc;
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #9965f4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Opties</h2>
+        
+        <label for="toolPreset">Kies Type Tool:</label>
+        <select id="toolPreset" onchange="toggleFields(); generateText();">
+            <option value="">-- Maak een keuze --</option>
+            <option value="zimmerman">Eric Zimmerman</option>
+            <option value="pypi">PyPI</option>
+            <option value="sysinternals">Sysinternals</option>
+            <option value="weblink">Weblink</option>
+            <option value="gitreleases">Github Releases</option>
+            <option value="gitcode">Github Code</option>
+            <option value="wsl">WSL</option>
+        </select>
+
+        <div id="generalFields" class="hidden">
+            <label for="toolName">Tool Naam:</label>
+            <input type="text" id="toolName" placeholder="Bijv. MFTECmd of PECmd" oninput="generateText()">
+        </div>
+
+        <div id="zimmermanFields" class="hidden">
+            <label for="interfaceType">Interface:</label>
+            <select id="interfaceType" onchange="toggleFields(); generateText();">
+                <option value="gui">GUI</option>
+                <option value="cli">CLI</option>
+            </select>
+
+            <label for="folderName">Huidige Folder Naam:</label>
+            <input type="text" id="folderName" placeholder="Bijv. net6" oninput="generateText()">
+
+            <label for="newFolderName">Nieuwe Folder Naam (optioneel):</label>
+            <input type="text" id="newFolderName" placeholder="Bijv. MFTECmd" oninput="generateText()">
+
+            <label class="checkbox-group">
+                <input type="checkbox" id="dotnetLegacy" onchange="generateText()"> 
+                Dotnet 4
+            </label>
+        </div>
+
+        <div id="weblinkFields" class="hidden">
+            <label for="URL">URL:</label>
+            <input type="text" id="URL" placeholder="Bijv. https://example.com" oninput="generateText()">
+        </div>
+
+        <div id="gitReleasesFields" class="hidden">
+            <label for="gitVersion">Versie (optioneel):</label>
+            <input type="text" id="gitVersion" placeholder="Bijv. windows 64 bit" oninput="generateText()">
+
+            <label for="gitReleasesURL">Repository URL:</label>
+            <input type="text" id="gitReleasesURL" placeholder="Bijv. https://github.com/example/releases" oninput="generateText()">
+
+            <label for="gitFolderName">Huidige Folder Naam:</label>
+            <input type="text" id="gitFolderName" placeholder="Bijv. net6" oninput="generateText()">
+
+            <label for="gitNewFolderName">Nieuwe Folder Naam (optioneel):</label>
+            <input type="text" id="gitNewFolderName" placeholder="Bijv. MFTECmd" oninput="generateText()">
+
+            <label for="dfir">DFIR category:</label>
+            <select id="dfir" onchange="toggleFields(); generateText();">
+                <option value="">-- Maak een keuze --</option>
+                <option value="Artifact Analysis">Artifact Analysis</option>
+                <option value="Data Recovery">Data Recovery</option>
+                <option value="Documenting">Documenting</option>
+                <option value="Eric Zimmerman Tools">Eric Zimmerman Tools</option>
+                <option value="Hashing">Hashing</option>
+                <option value="Imaging">Imaging</option>
+                <option value="Malware Analysis">Malware Analysis</option>
+                <option value="Memory Forensics">Memory Forensics</option>
+                <option value="Mounting">Mounting</option>
+                <option value="Network Analysis">Network Analysis</option>
+                <option value="OSINT">OSINT</option>
+                <option value="Other">Other</option>
+                <option value="Password Recovery">Password Recovery</option>
+                <option value="Picture Analysis">Picture Analysis</option>
+                <option value="SANS Tools">SANS Tools</option>
+                <option value="Sysinternals">Sysinternals</option>
+                <option value="Timeline">Timeline</option>
+            </select>
+        </div>
+
+        <div id="gitCodeFields" class="hidden">
+            <label for="gitFileName">Filename:</label>
+            <input type="text" id="gitFileName" placeholder="Bijv. file.py" oninput="generateText()">
+
+            <label for="gitCodeURL">Repository URL:</label>
+            <input type="text" id="gitCodeURL" placeholder="Bijv. https://github.com/example/code" oninput="generateText()">
+
+            <label for="gitDfir">DFIR category:</label>
+            <select id="gitDfir" onchange="toggleFields(); generateText();">
+                <option value="">-- Maak een keuze --</option>
+                <option value="Artifact Analysis">Artifact Analysis</option>
+                <option value="Data Recovery">Data Recovery</option>
+                <option value="Documenting">Documenting</option>
+                <option value="Eric Zimmerman Tools">Eric Zimmerman Tools</option>
+                <option value="Hashing">Hashing</option>
+                <option value="Imaging">Imaging</option>
+                <option value="Malware Analysis">Malware Analysis</option>
+                <option value="Memory Forensics">Memory Forensics</option>
+                <option value="Mounting">Mounting</option>
+                <option value="Network Analysis">Network Analysis</option>
+                <option value="OSINT">OSINT</option>
+                <option value="Other">Other</option>
+                <option value="Password Recovery">Password Recovery</option>
+                <option value="Picture Analysis">Picture Analysis</option>
+                <option value="SANS Tools">SANS Tools</option>
+                <option value="Sysinternals">Sysinternals</option>
+                <option value="Timeline">Timeline</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Output</h2>
+        <div id="outputText" class="output-area">Selecteer een tool om de tekst te genereren...</div>
+        <button onclick="copyToClipboard()">Kopieer Tekst</button>
+    </div>
+</div>
+
+<script>
+    function toggleFields() {
+        const choice = document.getElementById('toolPreset').value;
+        const generalDiv = document.getElementById('generalFields');
+        const zimmermanDiv = document.getElementById('zimmermanFields');
+        const weblinkDiv = document.getElementById('weblinkFields');
+        const gitReleasesDiv = document.getElementById('gitReleasesFields');
+        const gitCodeDiv = document.getElementById('gitCodeFields');
+        
+        generalDiv.classList.toggle('hidden', choice === 'weblink');
+        zimmermanDiv.classList.toggle('hidden', choice !== 'zimmerman');
+        weblinkDiv.classList.toggle('hidden', choice !== 'weblink');
+        gitReleasesDiv.classList.toggle('hidden', choice !== 'gitreleases');
+        gitCodeDiv.classList.toggle('hidden', choice !== 'gitcode');
+    }
+
+    function generateText() {
+        const choice = document.getElementById('toolPreset').value;
+        const output = document.getElementById('outputText');
+        
+        if (!choice) {
+            output.innerText = "Selecteer een tool om de tekst te genereren...";
+            return;
+        }
+
+        const toolName = document.getElementById('toolName').value || "[TOOLNAAM]";
+
+        const gitVersion = document.getElementById('gitVersion').value;
+
+        const folderName = document.getElementById('folderName').value || "[FOLDERNAME]";
+        const newFolderName = document.getElementById('newFolderName').value;
+        const gitFolderName = document.getElementById('gitFolderName').value || "[FOLDERNAME]";
+        const gitNewFolderName = document.getElementById('gitNewFolderName').value;
+
+        const category = document.getElementById('dfir').value  || "[CATEGORY]";
+        const gitCategory = document.getElementById('gitDfir').value  || "[CATEGORY]";
+
+        const interfaceType = document.getElementById('interfaceType').value;
+        
+        const dotnetVersion = document.getElementById('dotnetLegacy').checked ? "4" : "9";
+        
+        const URL = document.getElementById('URL').value || "[URL]";
+        const gitReleasesURL = document.getElementById('gitReleasesURL').value || "[GITHUB_RELEASES_URL]";
+        const gitCodeURL = document.getElementById('gitCodeURL').value || "[GITHUB_CODE_URL]";
+
+        const gitFileName = document.getElementById('gitFileName').value || "[FILENAME]";
+
+        let steps = [];
+
+        // Eric Zimmerman Tools
+        if (choice === 'zimmerman') {
+            steps.push(`Download de nieuwste dotnet ${dotnetVersion} versie van ${toolName} via de website (https://ericzimmerman.github.io/).`);
+            steps.push(`Pak het bestand uit.`);
+
+            let activeFolder = folderName;
+
+            if (newFolderName && newFolderName.trim() !== "") {
+                steps.push(`Hernoem de folder "${folderName}" naar "${newFolderName}".`);
+                activeFolder = newFolderName;
+            }
+
+            steps.push(`Verplaats de folder "${activeFolder}" naar "C:\\Forensics\\Eric Zimmerman Tools\\".`);
+
+            if (interfaceType === 'gui') {
+                steps.push(`Te gebruiken als GUI.`);
+            } else {
+                steps.push(`Voeg het pad "C:\\Forensics\\Eric Zimmerman Tools\\${activeFolder}" toe aan PATH van de System Environment Variables.`);
+                steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
+            }
+
+        // PyPi
+        } else if (choice === 'pypi') {
+            steps.push(`Open command prompt.`);
+            steps.push(`Installeer ${toolName} met "pip install ${toolName.toLowerCase()}".`);
+            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}",`);
+
+        // Sysinternals
+        } else if (choice === 'sysinternals') {
+            steps.push(`Download de nieuwste versie van ${toolName} via de website (https://live.sysinternals.com/).`);
+            steps.push(`Verplaats de applicatie "${toolName}.exe" naar "C:\\Forensics\\Sysinternals\\".`);
+            steps.push(`Voeg het pad "C:\\Forensics\\Sysinternals\\" toe aan PATH van de System Environment Variables.`);
+            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
+        
+        // Weblink
+        } else if (choice === 'weblink') {
+            steps.push(`Automatisch toegevoegd door "DirectorySetup.ps1".`);
+            steps.push(`Website (${URL}).`);
+        
+        // Github releases
+        } else if (choice === 'gitreleases') {
+            steps.push(`Download de nieuwste ${gitVersion}versie van ${toolName} via de Github releases website (${gitReleasesURL}).`);
+            steps.push(`Pak het bestand uit.`);
+
+            let activeFolder = gitFolderName;
+
+            if (gitNewFolderName && gitNewFolderName.trim() !== "") {
+                steps.push(`Hernoem de folder "${gitFolderName}" naar "${gitNewFolderName}".`);
+                activeFolder = gitNewFolderName;
+            }
+
+            steps.push(`Verplaats de folder "${activeFolder}" naar "C:\\Forensics\\${category}\\".`);
+            steps.push(`Voeg het pad "C:\\Forensics\\${category}\\${activeFolder}" toe aan PATH van de System Environment Variables.`);
+            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
+        
+        // Github code
+        } else if (choice === 'gitcode') {
+            steps.push(`Download de nieuwste versie van ${toolName} via de Github > Code > Download zip (${gitCodeURL}).`);
+            steps.push(`Pak het bestand uit.`);
+            steps.push(`Open de uitgepakte folder en verplaats het bestand "${gitFileName}" naar "C:\\Forensics\\${gitCategory}\\".`);
+            steps.push(`Maak in "C:\\Forensics\\${gitCategory}\\" een nieuw tekst bestand aan.`);
+            steps.push(`Type in dit bestand de regel "@python "%~dp0${gitFileName}" %*"`);
+            steps.push(`Sla dit bestand op als "${toolName}.bat".`);
+            steps.push(`Voeg het pad "C:\\Forensics\\${gitCategory}" toe aan PATH van de System Environment Variables.`);
+            steps.push(`Te gebruiken als command line tool met "${toolName.toLowerCase()}".`);
+
+        // WSL
+        } else if (choice === 'wsl') {
+            steps.push(`Open WSL.`);
+            steps.push(`Installeer ${toolName} met "sudo apt install ${toolName.toLowerCase()}".`);
+            steps.push(`Te gebruiken als command line tool met "wsl ${toolName.toLowerCase()}",`);
+        }
+
+        const resultText = steps.map((step, index) => `${index + 1}. ${step}`).join('\n');
+        output.innerText = resultText;
+    }
+
+    function copyToClipboard() {
+        const text = document.getElementById('outputText').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Tekst gekopieerd!");
+        });
+    }
+</script>
+
+</body>
+</html>
