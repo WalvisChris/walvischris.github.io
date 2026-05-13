@@ -74,8 +74,7 @@
 
         .grid-row { grid-template-columns: 120px 1fr 90px 70px; }
         
-        /* AANGEPAST: Kolom voor % van 70px naar 90px */
-        .crew-grid { grid-template-columns: 100px 90px 1fr; }
+        .crew-grid { grid-template-columns: 1fr 1fr; }
         
         .total-grid { grid-template-columns: 1fr 1fr; }
 
@@ -117,6 +116,33 @@
             .column-right { order: -1; margin-bottom: 30px; }
             .sticky-wrapper { position: static; }
         }
+
+        /* Styling voor de balkjes in Card 5 */
+        .bar-container {
+            background: rgba(0, 0, 0, 0.3);
+            height: 12px;
+            width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+            border: 1px solid rgba(255, 140, 0, 0.3);
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0%; /* Begint op 0, wordt later via JS gevuld */
+            background: linear-gradient(90deg, #ff8c00, #ffb347);
+            transition: width 0.3s ease;
+        }
+
+        /* Specifieke layout voor de Actual Take rijen */
+        .actual-take-row {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            border-bottom: 1px solid #ff8c00;
+        }
+
     </style>
 </head>
 <body>
@@ -153,80 +179,267 @@
             <div class="crew-grid">
                 <div class="grid-cell cell-label">HOST</div>
                 <div class="grid-cell"><input type="number" id="p1-pct" value="100" step="5" min="0" max="100" oninput="calculate(this)"></div>
-                <div class="grid-cell cell-money" id="p1-money"></div>
             </div>
             <div class="crew-grid">
                 <div class="grid-cell cell-label">PLAYER 2</div>
                 <div class="grid-cell"><input type="number" id="p2-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-                <div class="grid-cell cell-money" id="p2-money"></div>
             </div>
             <div class="crew-grid">
                 <div class="grid-cell cell-label">PLAYER 3</div>
                 <div class="grid-cell"><input type="number" id="p3-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-                <div class="grid-cell cell-money" id="p3-money"></div>
             </div>
             <div class="crew-grid last-row">
                 <div class="grid-cell cell-label">PLAYER 4</div>
                 <div class="grid-cell"><input type="number" id="p4-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-                <div class="grid-cell cell-money" id="p4-money"></div>
             </div>
             <div id="pct-warning" style="display: none;">TOTAAL MOET 100% ZIJN!</div>
         </div>
     </div>
 
-    <div class="column-right">
-        <div class="sticky-wrapper">
-            <div class="card">
-                <h1>Total Loot Estimate</h1>
-                <div class="total-grid">
-                    <div class="grid-cell cell-label">MINIMUM TOTAL</div>
-                    <div class="grid-cell cell-money" style="font-size: 1.2rem;">$ <span id="res-min">0</span></div>
+    <div class="column-left">
+        <!-- CARD 4: TOTAL TAKE -->
+        <div class="card">
+            <h1>Total Loot Estimate</h1>
+            <div style="padding: 20px; text-align: center;">
+                <div id="total-estimate-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
+                <div style="color: #aaa; font-size: 0.9rem;">
+                    Primary: <span id="total-primary-part">$ 0</span>
                 </div>
-                <div class="total-grid last-row">
-                    <div class="grid-cell cell-label">MAXIMUM TOTAL</div>
-                    <div class="grid-cell cell-money" style="font-size: 1.2rem;">$ <span id="res-max">0</span></div>
+                <div style="color: #aaa; font-size: 0.9rem;">
+                    Secondary: <span id="total-secondary-part">$ 0</span>
                 </div>
+            </div>
+        </div>
+        
+        <!-- CARD 5: PLAYER BAG CAPACITY -->
+        <div class="card">
+            <h1>Player Bag Capacity</h1>
+            
+            <!-- Host Bar -->
+            <div class="actual-take-row">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span class="cell-label">Host</span>
+                    <span id="bar-text-p1" class="cell-money">0% FULL</span>
+                </div>
+                <div class="bar-container" style="display: flex;">
+                    <div id="bar-p1" style="display: flex; width: 100%; height: 100%;"></div>
+                </div>
+                <div id="legend-p1" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+            </div>
+
+            <!-- Player 2 Bar -->
+            <div class="actual-take-row">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span class="cell-label">Player 2</span>
+                    <span id="bar-text-p2" class="cell-money">0% FULL</span>
+                </div>
+                <div class="bar-container" style="display: flex;">
+                    <div id="bar-p2" style="display: flex; width: 100%; height: 100%;"></div>
+                </div>
+                <div id="legend-p2" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+            </div>
+
+            <!-- Player 3 Bar -->
+            <div class="actual-take-row">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span class="cell-label">Player 3</span>
+                    <span id="bar-text-p3" class="cell-money">0% FULL</span>
+                </div>
+                <div class="bar-container" style="display: flex;">
+                    <div id="bar-p3" style="display: flex; width: 100%; height: 100%;"></div>
+                </div>
+                <div id="legend-p3" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+            </div>
+
+            <!-- Player 4 Bar -->
+            <div class="actual-take-row">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span class="cell-label">Player 4</span>
+                    <span id="bar-text-p4" class="cell-money">0% FULL</span>
+                </div>
+                <div class="bar-container" style="display: flex;">
+                    <div id="bar-p4" style="display: flex; width: 100%; height: 100%;"></div>
+                </div>
+                <div id="legend-p4" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+            </div>
+        </div>
+
+        <!-- CARD 6: ACTUAL TAKE -->
+        <div class="card">
+            <h1>Actual Take</h1>
+            <div style="padding: 20px; text-align: center;">
+                <div id="actual-total-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
+                
+                <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px;">
+                    <span>Primary: <span id="actual-primary-part">$ 0</span></span>
+                    <span>Secondary: <span id="actual-secondary-part">$ 0</span></span>
+                </div>
+                
+                <div id="actual-crew-list" style="border-top: 1px solid rgba(255,140,0,0.3); padding-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                    </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    function calculate(changedInput) {
+    function calculate() {
         const primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
-        let secMin = 0, secMax = 0;
-        document.querySelectorAll('.amount').forEach(input => {
-            const count = parseInt(input.value) || 0;
-            secMin += (parseFloat(input.getAttribute('data-min')) * count);
-            secMax += (parseFloat(input.getAttribute('data-max')) * count);
+        
+        // 1. Definieer buit met kleuren
+        let lootItems = [
+            { name: 'GOLD',    weight: 66.66, minVal: 328584, maxVal: 333192, color: '#FFD700' }, 
+            { name: 'COCAINE', weight: 50.00, minVal: 220500, maxVal: 255000, color: '#3498db' }, 
+            { name: 'ARTWORK', weight: 50.00, minVal: 176200, maxVal: 199700, color: '#9b59b6' }, 
+            { name: 'WEED',    weight: 37.50, minVal: 145980, maxVal: 149265, color: '#2ecc71' }, 
+            { name: 'CASH',    weight: 25.00, minVal: 78480,  maxVal: 89420,  color: '#e74c3c' }  
+        ];
+
+        const inputs = document.querySelectorAll('.amount');
+        // Volgorde in HTML: Cash (0), Art (1), Weed (2), Coke (3), Gold (4)
+        lootItems[0].count = parseInt(inputs[4].value) || 0; // Gold
+        lootItems[1].count = parseInt(inputs[3].value) || 0; // Cocaine
+        lootItems[2].count = parseInt(inputs[1].value) || 0; // Artwork
+        lootItems[3].count = parseInt(inputs[2].value) || 0; // Weed
+        lootItems[4].count = parseInt(inputs[0].value) || 0; // Cash
+
+        // 2. Bereken POTENTIAL loot (Card 4 - ALLES op tafel)
+        let potentialSecMin = 0;
+        let potentialSecMax = 0;
+        lootItems.forEach(item => {
+            potentialSecMin += item.count * item.minVal;
+            potentialSecMax += item.count * item.maxVal;
         });
-        const totalMin = primaryValue + secMin;
-        const totalMax = primaryValue + secMax;
-        document.getElementById('res-min').innerText = totalMin.toLocaleString('nl-NL');
-        document.getElementById('res-max').innerText = totalMax.toLocaleString('nl-NL');
 
-        let pcts = [{id: 'p1-pct', money: 'p1-money'}, {id: 'p2-pct', money: 'p2-money'}, {id: 'p3-pct', money: 'p3-money'}, {id: 'p4-pct', money: 'p4-money'}];
-        let currentTotalPct = 0;
-        pcts.forEach(p => { currentTotalPct += (parseInt(document.getElementById(p.id).value) || 0); });
+        // 3. Spelers initialiseren
+        let playerPcts = [
+            { id: 'p1', pct: parseInt(document.getElementById('p1-pct').value) || 0, bagSpace: 0, contents: [] },
+            { id: 'p2', pct: parseInt(document.getElementById('p2-pct').value) || 0, bagSpace: 0, contents: [] },
+            { id: 'p3', pct: parseInt(document.getElementById('p3-pct').value) || 0, bagSpace: 0, contents: [] },
+            { id: 'p4', pct: parseInt(document.getElementById('p4-pct').value) || 0, bagSpace: 0, contents: [] }
+        ];
+        
+        let activePlayers = playerPcts.filter(p => p.pct > 0);
+        let actualSecMin = 0;
+        let actualSecMax = 0;
 
-        if (currentTotalPct > 100 && changedInput) {
-            changedInput.value = parseInt(changedInput.value) - (currentTotalPct - 100);
-            currentTotalPct = 100;
+        // 4. Buit verdelen over tassen voor ACTUAL loot (Card 6)
+        lootItems.forEach(item => {
+            let remainingWeightOfItem = item.count * item.weight;
+
+            for (let p = 0; p < activePlayers.length; p++) {
+                if (remainingWeightOfItem <= 0) break;
+
+                let spaceLeft = 100 - activePlayers[p].bagSpace;
+                if (spaceLeft > 0) {
+                    let amountToTake = Math.min(remainingWeightOfItem, spaceLeft);
+                    let ratio = amountToTake / item.weight;
+                    
+                    actualSecMin += item.minVal * ratio;
+                    actualSecMax += item.maxVal * ratio;
+
+                    activePlayers[p].contents.push({
+                        name: item.name,
+                        color: item.color,
+                        width: amountToTake,
+                        units: ratio
+                    });
+
+                    activePlayers[p].bagSpace += amountToTake;
+                    remainingWeightOfItem -= amountToTake;
+                }
+            }
+        });
+
+        // 5. Update UI: Card 4 (Total Loot Estimate - ALLES op tafel)
+        const totalPotentialMin = primaryValue + potentialSecMin;
+        const totalPotentialMax = primaryValue + potentialSecMax;
+
+        document.getElementById('total-estimate-display').innerText = 
+            `$${Math.round(totalPotentialMin).toLocaleString('nl-NL')} - $${Math.round(totalPotentialMax).toLocaleString('nl-NL')}`;
+
+        document.getElementById('total-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
+        document.getElementById('total-secondary-part').innerText = 
+            `$${Math.round(potentialSecMin).toLocaleString('nl-NL')} - $${Math.round(potentialSecMax).toLocaleString('nl-NL')}`;
+
+        // 6. Bars en Legenda tekenen
+        playerPcts.forEach(p => {
+            const barContainer = document.getElementById(`bar-${p.id}`);
+            const barText = document.getElementById(`bar-text-${p.id}`);
+            const legendContainer = document.getElementById(`legend-${p.id}`);
+
+            if (barContainer) {
+                barContainer.innerHTML = '';
+                if (legendContainer) legendContainer.innerHTML = ''; 
+
+                p.contents.forEach(segment => {
+                    const div = document.createElement('div');
+                    div.style.width = segment.width + '%';
+                    div.style.height = '100%';
+                    div.style.backgroundColor = segment.color;
+                    div.style.transition = 'width 0.3s ease';
+                    barContainer.appendChild(div);
+
+                    if (legendContainer) {
+                        const legendItem = document.createElement('span');
+                        legendItem.style.color = segment.color;
+                        legendItem.style.fontWeight = 'bold';
+                        legendItem.innerText = `${segment.name} (${segment.units.toFixed(1)}x)`;
+                        legendContainer.appendChild(legendItem);
+                    }
+                });
+            }
+            
+            if (barText) {
+                barText.innerText = Math.round(p.bagSpace) + '% FULL';
+            }
+        });
+
+        // 7. Update UI: Card 6 (Actual Take - WAT MEE KAN)
+        const finalActualMin = primaryValue + actualSecMin;
+        const finalActualMax = primaryValue + actualSecMax;
+
+        document.getElementById('actual-total-display').innerText = 
+            `$${Math.round(finalActualMin).toLocaleString('nl-NL')} - $${Math.round(finalActualMax).toLocaleString('nl-NL')}`;
+
+        // We vullen nu alleen de getallen in, de tekst staat al in de HTML
+        document.getElementById('actual-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
+        document.getElementById('actual-secondary-part').innerText = 
+            `$${Math.round(actualSecMin).toLocaleString('nl-NL')} - $${Math.round(actualSecMax).toLocaleString('nl-NL')}`;
+            
+        // 8. NIEUW: Actual Take per Player (alleen vanaf 15%)
+        const crewListContainer = document.getElementById('actual-crew-list');
+        if (crewListContainer) {
+            crewListContainer.innerHTML = ''; // Maak lijst leeg
+
+            playerPcts.forEach(p => {
+                // Toon alleen als cut >= 15%
+                if (p.pct >= 15) {
+                    const playerMin = Math.round(finalActualMin * (p.pct / 100));
+                    const playerMax = Math.round(finalActualMax * (p.pct / 100));
+                    
+                    const row = document.createElement('div');
+                    row.style.display = 'flex';
+                    row.style.justifyContent = 'space-between';
+                    row.style.fontSize = '0.85rem';
+                    row.style.color = '#e0e0e0';
+                    
+                    // Naam vertalen voor weergave
+                    const label = p.id === 'p1' ? 'Host' : `Player ${p.id.replace('p', '')}`;
+                    
+                    row.innerHTML = `
+                        <span style="font-weight: bold;">${label} (${p.pct}%):</span>
+                        <span style="color: #ff8c00; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>
+                    `;
+                    crewListContainer.appendChild(row);
+                }
+            });
         }
 
+        // 9. Warning check
+        let currentTotalPct = playerPcts.reduce((a, b) => a + b.pct, 0);
         const warning = document.getElementById('pct-warning');
-        warning.style.display = currentTotalPct !== 100 ? 'block' : 'none';
-        if(currentTotalPct !== 100) warning.innerText = `TOTAAL IS ${currentTotalPct}%. MOET 100% ZIJN!`;
-
-        pcts.forEach(p => {
-            const val = parseInt(document.getElementById(p.id).value) || 0;
-            const display = document.getElementById(p.money);
-            if (val > 0) {
-                const mMin = Math.round(totalMin * (val / 100)).toLocaleString('nl-NL');
-                const mMax = Math.round(totalMax * (val / 100)).toLocaleString('nl-NL');
-                display.innerText = `$${mMin} - $${mMax}`;
-            } else { display.innerText = ''; }
-        });
+        if (warning) warning.style.display = (currentTotalPct !== 100 && currentTotalPct !== 0) ? 'block' : 'none';
     }
     calculate();
 </script>
