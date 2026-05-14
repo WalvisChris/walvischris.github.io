@@ -143,6 +143,12 @@
             border-bottom: 1px solid #ff8c00;
         }
 
+        /* Rode tekst voor kosten */
+        .cost-text {
+            color: #ff8c00;
+            font-size: 0.8rem;
+        }
+
     </style>
 </head>
 <body>
@@ -273,10 +279,12 @@
                 <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px;">
                     <span>Primary: <span id="actual-primary-part">$ 0</span></span>
                     <span>Secondary: <span id="actual-secondary-part">$ 0</span></span>
+                    <span class="cost-text">Fencing Fee (10%): <span id="fencing-fee">$ 0</span></span>
+                    <span class="cost-text">Pavel's Cut (2%): <span id="pavel-cut">$ 0</span></span>
                 </div>
                 
                 <div id="actual-crew-list" style="border-top: 1px solid rgba(255,140,0,0.3); padding-top: 10px; display: flex; flex-direction: column; gap: 5px;">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -286,7 +294,6 @@
     function calculate() {
         const primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
         
-        // 1. Definieer buit met kleuren
         let lootItems = [
             { name: 'GOLD',    weight: 66.66, minVal: 328584, maxVal: 333192, color: '#FFD700' }, 
             { name: 'COCAINE', weight: 50.00, minVal: 220500, maxVal: 255000, color: '#3498db' }, 
@@ -296,14 +303,12 @@
         ];
 
         const inputs = document.querySelectorAll('.amount');
-        // Volgorde in HTML: Cash (0), Art (1), Weed (2), Coke (3), Gold (4)
-        lootItems[0].count = parseInt(inputs[4].value) || 0; // Gold
-        lootItems[1].count = parseInt(inputs[3].value) || 0; // Cocaine
-        lootItems[2].count = parseInt(inputs[1].value) || 0; // Artwork
-        lootItems[3].count = parseInt(inputs[2].value) || 0; // Weed
-        lootItems[4].count = parseInt(inputs[0].value) || 0; // Cash
+        lootItems[0].count = parseInt(inputs[4].value) || 0; 
+        lootItems[1].count = parseInt(inputs[3].value) || 0; 
+        lootItems[2].count = parseInt(inputs[1].value) || 0; 
+        lootItems[3].count = parseInt(inputs[2].value) || 0; 
+        lootItems[4].count = parseInt(inputs[0].value) || 0; 
 
-        // 2. Bereken POTENTIAL loot (Card 4 - ALLES op tafel)
         let potentialSecMin = 0;
         let potentialSecMax = 0;
         lootItems.forEach(item => {
@@ -311,7 +316,6 @@
             potentialSecMax += item.count * item.maxVal;
         });
 
-        // 3. Spelers initialiseren
         let playerPcts = [
             { id: 'p1', pct: parseInt(document.getElementById('p1-pct').value) || 0, bagSpace: 0, contents: [] },
             { id: 'p2', pct: parseInt(document.getElementById('p2-pct').value) || 0, bagSpace: 0, contents: [] },
@@ -323,120 +327,89 @@
         let actualSecMin = 0;
         let actualSecMax = 0;
 
-        // 4. Buit verdelen over tassen voor ACTUAL loot (Card 6)
         lootItems.forEach(item => {
             let remainingWeightOfItem = item.count * item.weight;
-
             for (let p = 0; p < activePlayers.length; p++) {
                 if (remainingWeightOfItem <= 0) break;
-
                 let spaceLeft = 100 - activePlayers[p].bagSpace;
                 if (spaceLeft > 0) {
                     let amountToTake = Math.min(remainingWeightOfItem, spaceLeft);
                     let ratio = amountToTake / item.weight;
-                    
                     actualSecMin += item.minVal * ratio;
                     actualSecMax += item.maxVal * ratio;
-
-                    activePlayers[p].contents.push({
-                        name: item.name,
-                        color: item.color,
-                        width: amountToTake,
-                        units: ratio
-                    });
-
+                    activePlayers[p].contents.push({ name: item.name, color: item.color, width: amountToTake, units: ratio });
                     activePlayers[p].bagSpace += amountToTake;
                     remainingWeightOfItem -= amountToTake;
                 }
             }
         });
 
-        // 5. Update UI: Card 4 (Total Loot Estimate - ALLES op tafel)
         const totalPotentialMin = primaryValue + potentialSecMin;
         const totalPotentialMax = primaryValue + potentialSecMax;
 
-        document.getElementById('total-estimate-display').innerText = 
-            `$${Math.round(totalPotentialMin).toLocaleString('nl-NL')} - $${Math.round(totalPotentialMax).toLocaleString('nl-NL')}`;
-
+        document.getElementById('total-estimate-display').innerText = `$${Math.round(totalPotentialMin).toLocaleString('nl-NL')} - $${Math.round(totalPotentialMax).toLocaleString('nl-NL')}`;
         document.getElementById('total-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
-        document.getElementById('total-secondary-part').innerText = 
-            `$${Math.round(potentialSecMin).toLocaleString('nl-NL')} - $${Math.round(potentialSecMax).toLocaleString('nl-NL')}`;
+        document.getElementById('total-secondary-part').innerText = `$${Math.round(potentialSecMin).toLocaleString('nl-NL')} - $${Math.round(potentialSecMax).toLocaleString('nl-NL')}`;
 
-        // 6. Bars en Legenda tekenen
         playerPcts.forEach(p => {
             const barContainer = document.getElementById(`bar-${p.id}`);
             const barText = document.getElementById(`bar-text-${p.id}`);
             const legendContainer = document.getElementById(`legend-${p.id}`);
-
             if (barContainer) {
                 barContainer.innerHTML = '';
                 if (legendContainer) legendContainer.innerHTML = ''; 
-
                 p.contents.forEach(segment => {
                     const div = document.createElement('div');
-                    div.style.width = segment.width + '%';
-                    div.style.height = '100%';
-                    div.style.backgroundColor = segment.color;
-                    div.style.transition = 'width 0.3s ease';
+                    div.style.width = segment.width + '%'; div.style.height = '100%'; div.style.backgroundColor = segment.color;
                     barContainer.appendChild(div);
-
                     if (legendContainer) {
                         const legendItem = document.createElement('span');
-                        legendItem.style.color = segment.color;
-                        legendItem.style.fontWeight = 'bold';
+                        legendItem.style.color = segment.color; legendItem.style.fontWeight = 'bold';
                         legendItem.innerText = `${segment.name} (${segment.units.toFixed(1)}x)`;
                         legendContainer.appendChild(legendItem);
                     }
                 });
             }
-            
-            if (barText) {
-                barText.innerText = Math.round(p.bagSpace) + '% FULL';
-            }
+            if (barText) barText.innerText = Math.round(p.bagSpace) + '% FULL';
         });
 
-        // 7. Update UI: Card 6 (Actual Take - WAT MEE KAN)
-        const finalActualMin = primaryValue + actualSecMin;
-        const finalActualMax = primaryValue + actualSecMax;
+        // --- BEREKENING CARD 6 MET FEES ---
+        const brutoActualMin = primaryValue + actualSecMin;
+        const brutoActualMax = primaryValue + actualSecMax;
 
-        document.getElementById('actual-total-display').innerText = 
-            `$${Math.round(finalActualMin).toLocaleString('nl-NL')} - $${Math.round(finalActualMax).toLocaleString('nl-NL')}`;
+        const feeFencingMin = brutoActualMin * 0.10;
+        const feeFencingMax = brutoActualMax * 0.10;
+        const feePavelMin = brutoActualMin * 0.02;
+        const feePavelMax = brutoActualMax * 0.02;
 
-        // We vullen nu alleen de getallen in, de tekst staat al in de HTML
+        const finalNettoMin = brutoActualMin - feeFencingMin - feePavelMin;
+        const finalNettoMax = brutoActualMax - feeFencingMax - feePavelMax;
+
+        // UI Updates voor de fees
+        document.getElementById('fencing-fee').innerText = `${Math.round(feeFencingMin).toLocaleString('nl-NL')} - $${Math.round(feeFencingMax).toLocaleString('nl-NL')}`;
+        document.getElementById('pavel-cut').innerText = `${Math.round(feePavelMin).toLocaleString('nl-NL')} - $${Math.round(feePavelMax).toLocaleString('nl-NL')}`;
+
+        document.getElementById('actual-total-display').innerText = `$${Math.round(finalNettoMin).toLocaleString('nl-NL')} - $${Math.round(finalNettoMax).toLocaleString('nl-NL')}`;
         document.getElementById('actual-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
-        document.getElementById('actual-secondary-part').innerText = 
-            `$${Math.round(actualSecMin).toLocaleString('nl-NL')} - $${Math.round(actualSecMax).toLocaleString('nl-NL')}`;
+        document.getElementById('actual-secondary-part').innerText = `$${Math.round(actualSecMin).toLocaleString('nl-NL')} - $${Math.round(actualSecMax).toLocaleString('nl-NL')}`;
             
-        // 8. NIEUW: Actual Take per Player (alleen vanaf 15%)
         const crewListContainer = document.getElementById('actual-crew-list');
         if (crewListContainer) {
-            crewListContainer.innerHTML = ''; // Maak lijst leeg
-
+            crewListContainer.innerHTML = ''; 
             playerPcts.forEach(p => {
-                // Toon alleen als cut >= 15%
                 if (p.pct >= 15) {
-                    const playerMin = Math.round(finalActualMin * (p.pct / 100));
-                    const playerMax = Math.round(finalActualMax * (p.pct / 100));
-                    
+                    // Verdeling op basis van Netto bedrag
+                    const playerMin = Math.round(finalNettoMin * (p.pct / 100));
+                    const playerMax = Math.round(finalNettoMax * (p.pct / 100));
                     const row = document.createElement('div');
-                    row.style.display = 'flex';
-                    row.style.justifyContent = 'space-between';
-                    row.style.fontSize = '0.85rem';
-                    row.style.color = '#e0e0e0';
-                    
-                    // Naam vertalen voor weergave
+                    row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.fontSize = '0.85rem'; row.style.color = '#e0e0e0';
                     const label = p.id === 'p1' ? 'Host' : `Player ${p.id.replace('p', '')}`;
-                    
-                    row.innerHTML = `
-                        <span style="font-weight: bold;">${label} (${p.pct}%):</span>
-                        <span style="color: #ff8c00; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>
-                    `;
+                    row.innerHTML = `<span style="font-weight: bold;">${label} (${p.pct}%):</span><span style="color: #ff8c00; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>`;
                     crewListContainer.appendChild(row);
                 }
             });
         }
 
-        // 9. Warning check
         let currentTotalPct = playerPcts.reduce((a, b) => a + b.pct, 0);
         const warning = document.getElementById('pct-warning');
         if (warning) warning.style.display = (currentTotalPct !== 100 && currentTotalPct !== 0) ? 'block' : 'none';
