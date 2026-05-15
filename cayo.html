@@ -7,7 +7,8 @@
     <style>
         /* Achtergrond & Algemene Style */
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            /*font-family: 'Segoe UI', sans-serif; */
+            font-family: 'Consolas';
             margin: 0;
             padding: 0;
             background-color: #121212;
@@ -149,12 +150,67 @@
             font-size: 0.8rem;
         }
 
+        /* Hard Mode Styles */
+        body.hard-mode {
+            background-color: #1a0a0a; /* Iets roder/donkerder */
+        }
+
+        body.hard-mode .card {
+            border-color: #ff0000;
+        }
+
+        body.hard-mode .card h1 {
+            background: rgba(255, 0, 0, 0.25);
+            border-bottom: 2px solid #ff0000;
+        }
+
+        body.hard-mode .grid-row, 
+        body.hard-mode .crew-grid, 
+        body.hard-mode .total-grid,
+        body.hard-mode #pct-warning,
+        body.hard-mode .actual-take-row,
+        body.hard-mode .grid-cell {
+            border-color: #ff0000;
+        }
+
+        body.hard-mode .cell-money,
+        body.hard-mode .cost-text,
+        body.hard-mode #actual-crew-list span[style*="color: rgb(255, 140, 0)"] {
+            color: #ff0000 !important;
+        }
+
+        body.hard-mode .bar-fill {
+            background: linear-gradient(90deg, #ff0000, #ff4d4d);
+        }
+
+        /* Specifieke styling voor de toggle */
+        #hardmode-toggle {
+            accent-color: #ff8c00;
+        }
+
+        body.hard-mode #hardmode-toggle {
+            accent-color: #ff0000;
+        }
+
+        /* Zorg dat de kaart zelf geen vreemde uitlijning krijgt door de column-flex van de card class */
+        #difficulty-card {
+            flex-direction: row !important; 
+        }
+
     </style>
 </head>
 <body>
 
 <div class="dashboard">
     <div class="column-left">
+        <!-- CARD 0: HARD MODE -->
+        <div class="card" id="difficulty-card" style="margin-bottom: 0px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 15px 20px; box-sizing: border-box;">
+                <span class="cell-label" style="letter-spacing: 2px; font-size: 1rem;">HARD MODE</span>
+                <input type="checkbox" id="hardmode-toggle" onchange="toggleHardMode()" style="width: 22px; height: 22px; cursor: pointer; margin: 0;">
+            </div>
+        </div>
+
         <!-- CARD 1: PRIMARY -->
         <div class="card">
             <h1>PRIMARY TARGET</h1>
@@ -182,26 +238,31 @@
         <!-- CARD 3: CREW CUT -->
         <div class="card">
             <h1>CREW CUT (%)</h1>
-            <div class="crew-grid">
-                <div class="grid-cell cell-label">HOST</div>
-                <div class="grid-cell"><input type="number" id="p1-pct" value="100" step="5" min="0" max="100" oninput="calculate(this)"></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <span class="cell-label">HOST</span>
+                <input type="number" id="p1-pct" value="100" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
             </div>
-            <div class="crew-grid">
-                <div class="grid-cell cell-label">PLAYER 2</div>
-                <div class="grid-cell"><input type="number" id="p2-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-            </div>
-            <div class="crew-grid">
-                <div class="grid-cell cell-label">PLAYER 3</div>
-                <div class="grid-cell"><input type="number" id="p3-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-            </div>
-            <div class="crew-grid last-row">
-                <div class="grid-cell cell-label">PLAYER 4</div>
-                <div class="grid-cell"><input type="number" id="p4-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)"></div>
-            </div>
-            <div id="pct-warning" style="display: none;">TOTAAL MOET 100% ZIJN!</div>
-        </div>
-    </div>
 
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <span class="cell-label">PLAYER 2</span>
+                <input type="number" id="p2-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <span class="cell-label">PLAYER 3</span>
+                <input type="number" id="p3-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <span class="cell-label">PLAYER 4</span>
+                <input type="number" id="p4-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
+            </div>
+
+            <div id="pct-warning" style="display: none; border-top: 1px solid #ff8c00;">TOTAAL MOET 100% ZIJN!</div>
+        </div>
+
+    </div>
     <div class="column-left">
         <!-- CARD 4: TOTAL TAKE -->
         <div class="card">
@@ -291,17 +352,34 @@
 </div>
 
 <script>
+    function toggleHardMode() {
+        if (document.getElementById('hardmode-toggle').checked) {
+            document.body.classList.add('hard-mode');
+        } else {
+            document.body.classList.remove('hard-mode');
+        }
+        calculate(); // Herbereken direct
+    }
+
     function calculate() {
-        const primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
+        const isHardMode = document.getElementById('hardmode-toggle').checked;
+        const multiplier = isHardMode ? 1.10 : 1.0;
+
+        // Haal basiswaarde op en doe direct x 1.1 indien Hard Mode
+        let primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
+        primaryValue = primaryValue * multiplier;
         
         let lootItems = [
-            { name: 'GOLD',    weight: 66.66, minVal: 328584, maxVal: 333192, color: '#FFD700' }, 
-            { name: 'COCAINE', weight: 50.00, minVal: 220500, maxVal: 255000, color: '#3498db' }, 
-            { name: 'ARTWORK', weight: 50.00, minVal: 176200, maxVal: 199700, color: '#9b59b6' }, 
-            { name: 'WEED',    weight: 37.50, minVal: 145980, maxVal: 149265, color: '#2ecc71' }, 
-            { name: 'CASH',    weight: 25.00, minVal: 78480,  maxVal: 89420,  color: '#e74c3c' }  
+            { name: 'GOLD',    weight: 66.66, minVal: 328584 * multiplier, maxVal: 333192 * multiplier, color: '#FFD700' }, 
+            { name: 'COCAINE', weight: 50.00, minVal: 220500 * multiplier, maxVal: 255000 * multiplier, color: '#3498db' }, 
+            { name: 'ARTWORK', weight: 50.00, minVal: 176200 * multiplier, maxVal: 199700 * multiplier, color: '#9b59b6' }, 
+            { name: 'WEED',    weight: 37.50, minVal: 145980 * multiplier, maxVal: 149265 * multiplier, color: '#2ecc71' }, 
+            { name: 'CASH',    weight: 25.00, minVal: 78480  * multiplier, maxVal: 89420  * multiplier, color: '#e74c3c' }  
         ];
 
+        // ... De rest van je bestaande calculate() code ...
+        // (Zorg dat je alle code binnen de functie behoudt vanaf 'const inputs = ...')
+        
         const inputs = document.querySelectorAll('.amount');
         lootItems[0].count = parseInt(inputs[4].value) || 0; 
         lootItems[1].count = parseInt(inputs[3].value) || 0; 
@@ -348,7 +426,7 @@
         const totalPotentialMax = primaryValue + potentialSecMax;
 
         document.getElementById('total-estimate-display').innerText = `$${Math.round(totalPotentialMin).toLocaleString('nl-NL')} - $${Math.round(totalPotentialMax).toLocaleString('nl-NL')}`;
-        document.getElementById('total-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
+        document.getElementById('total-primary-part').innerText = `$${Math.round(primaryValue).toLocaleString('nl-NL')}`;
         document.getElementById('total-secondary-part').innerText = `$${Math.round(potentialSecMin).toLocaleString('nl-NL')} - $${Math.round(potentialSecMax).toLocaleString('nl-NL')}`;
 
         playerPcts.forEach(p => {
@@ -373,7 +451,6 @@
             if (barText) barText.innerText = Math.round(p.bagSpace) + '% FULL';
         });
 
-        // --- BEREKENING CARD 6 MET FEES ---
         const brutoActualMin = primaryValue + actualSecMin;
         const brutoActualMax = primaryValue + actualSecMax;
 
@@ -385,12 +462,11 @@
         const finalNettoMin = brutoActualMin - feeFencingMin - feePavelMin;
         const finalNettoMax = brutoActualMax - feeFencingMax - feePavelMax;
 
-        // UI Updates voor de fees
-        document.getElementById('fencing-fee').innerText = `${Math.round(feeFencingMin).toLocaleString('nl-NL')} - $${Math.round(feeFencingMax).toLocaleString('nl-NL')}`;
-        document.getElementById('pavel-cut').innerText = `${Math.round(feePavelMin).toLocaleString('nl-NL')} - $${Math.round(feePavelMax).toLocaleString('nl-NL')}`;
+        document.getElementById('fencing-fee').innerText = `$${Math.round(feeFencingMin).toLocaleString('nl-NL')} - $${Math.round(feeFencingMax).toLocaleString('nl-NL')}`;
+        document.getElementById('pavel-cut').innerText = `$${Math.round(feePavelMin).toLocaleString('nl-NL')} - $${Math.round(feePavelMax).toLocaleString('nl-NL')}`;
 
         document.getElementById('actual-total-display').innerText = `$${Math.round(finalNettoMin).toLocaleString('nl-NL')} - $${Math.round(finalNettoMax).toLocaleString('nl-NL')}`;
-        document.getElementById('actual-primary-part').innerText = `$${primaryValue.toLocaleString('nl-NL')}`;
+        document.getElementById('actual-primary-part').innerText = `$${Math.round(primaryValue).toLocaleString('nl-NL')}`;
         document.getElementById('actual-secondary-part').innerText = `$${Math.round(actualSecMin).toLocaleString('nl-NL')} - $${Math.round(actualSecMax).toLocaleString('nl-NL')}`;
             
         const crewListContainer = document.getElementById('actual-crew-list');
@@ -398,13 +474,14 @@
             crewListContainer.innerHTML = ''; 
             playerPcts.forEach(p => {
                 if (p.pct >= 15) {
-                    // Verdeling op basis van Netto bedrag
                     const playerMin = Math.round(finalNettoMin * (p.pct / 100));
                     const playerMax = Math.round(finalNettoMax * (p.pct / 100));
                     const row = document.createElement('div');
                     row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.fontSize = '0.85rem'; row.style.color = '#e0e0e0';
                     const label = p.id === 'p1' ? 'Host' : `Player ${p.id.replace('p', '')}`;
-                    row.innerHTML = `<span style="font-weight: bold;">${label} (${p.pct}%):</span><span style="color: #ff8c00; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>`;
+                    // Let op: we gebruiken inline style voor de kleur zodat JS deze makkelijk kan vinden voor het rode thema
+                    const colorHex = isHardMode ? '#ff0000' : '#ff8c00';
+                    row.innerHTML = `<span style="font-weight: bold;">${label} (${p.pct}%):</span><span style="color: ${colorHex}; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>`;
                     crewListContainer.appendChild(row);
                 }
             });
