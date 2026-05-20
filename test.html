@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactieve Plattegrond</title>
+    <style>
+        /* Schone basisinstellingen */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* De blauwe achtergrond voor de hele pagina */
+        body {
+            background-color: #2a4d69; /* Je kunt deze hex-kleur aanpassen naar het gewenste blauw */
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* De container waar de kaart en de puntjes in komen */
+        .map-container {
+            position: relative;
+            display: inline-block; /* Zorgt dat de container precies zo groot is als de afbeelding */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Zorgt dat de afbeelding netjes reageert */
+        .map-container img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* De basisstijl voor een puntje (marker) op de kaart */
+        .marker {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-color: #ff8d30; /* Rode kleur voor het puntje */
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%); /* Zorgt dat het exacte midden van de stip op de coördinaten ligt */
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        /* Effect als je over de stip herbeeft */
+        .marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            background-color: #ffcc00; /* Verandert naar geel bij hover */
+        }
+
+        /* De tooltip (de pop-up titel) */
+        .marker::after {
+            content: attr(data-title); /* Haalt de tekst op uit het 'data-title' attribuut */
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none; /* Zorgt dat de tooltip de muis niet in de weg zit */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Toon de tooltip als je met de muis over de marker gaat */
+        .marker:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="map-container">
+        
+        <img src="assets/compound.png" alt="Plattegrond van de stad">
+
+        <div class="marker" style="top: 52%; left: 43%;" data-title="El Rubio's Office / Basement"></div>
+
+        <div class="marker" style="top: 46%; left: 56%;" data-title="West Storage"></div>
+
+        <div class="marker" style="top: 73%; left: 38%;" data-title="South Storage"></div>
+
+        <div class="marker" style="top: 65%; left: 86%;" data-title="North Storage"></div>
+
+        <div class="marker" style="top: 34%; left: 19%;" data-title="Main Gate"></div>
+
+    </div>
+
+</body>
+</html>

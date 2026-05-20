@@ -7,7 +7,6 @@
     <style>
         /* Achtergrond & Algemene Style */
         body { 
-            /*font-family: 'Segoe UI', sans-serif; */
             font-family: 'Consolas';
             margin: 0;
             padding: 0;
@@ -20,7 +19,7 @@
             overflow-x: hidden;
         }
 
-        /* Dashboard layout */
+        /* Dashboard layout verdeeld over 3 kolommen */
         .dashboard {
             display: flex;
             justify-content: space-between;
@@ -28,6 +27,7 @@
             min-height: 100vh;
             box-sizing: border-box;
             padding: 40px;
+            gap: 25px; /* Zorgt voor een mooie egale ruimte tussen de 3 kolommen */
         }
 
         .column-left {
@@ -37,6 +37,15 @@
             gap: 25px;
         }
 
+        /* De middelste kolom voor de kaart */
+        .column-middle {
+            flex: 0 0 400px; /* Vaste, compactere breedte voor de kaartkolom */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* Alijnt de kaart strak linksboven */
+            justify-content: flex-start;
+        }
+
         .column-right {
             flex: 0 0 450px;
         }
@@ -44,10 +53,11 @@
         .sticky-wrapper {
             position: sticky;
             top: 40px;
+            width: 100%; /* Zorgt dat de kaart de breedte van de wrapper vult */
         }
 
-        /* Card Style */
-        .card { 
+        /* Card Style Base */
+        .card, .map-card { 
             background: rgba(30, 30, 30, 0.85); 
             border: 2px solid #ff8c00; 
             width: 100%; 
@@ -56,7 +66,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .card h1 {
+        .card h1, .map-card h1 {
             font-size: 1rem;
             margin: 0;
             padding: 12px;
@@ -64,6 +74,65 @@
             border-bottom: 2px solid #ff8c00;
             text-transform: uppercase;
             letter-spacing: 2px;
+        }
+
+        /* --- INTERACTIEVE KAART SPECIFIEKE STYLES --- */
+        .map-container {
+            position: relative;
+            display: block;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .map-container img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .marker {
+            position: absolute;
+            width: 14px;  /* Iets kleiner gemaakt voor de compactere card */
+            height: 14px; 
+            background-color: #ff8d30; 
+            border: 1.5px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%); 
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        /* Effect als je over de stip herbeeft */
+        .marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+            background-color: #ffcc00; 
+            z-index: 20; /* NIEUW: Zorgt dat de actieve stip direct BOVENOP andere stippen komt */
+        }
+
+        /* De tooltip (de pop-up titel) */
+        .marker::after {
+            content: attr(data-title); 
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            z-index: 30; /* NIEUW/UPDATE: Zorgt dat de tekst altijd de absolute bovenlaag is */
+        }
+
+        .marker:hover::after {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Grids */
@@ -74,9 +143,7 @@
         }
 
         .grid-row { grid-template-columns: 120px 1fr 90px 70px; }
-        
         .crew-grid { grid-template-columns: 1fr 1fr; }
-        
         .total-grid { grid-template-columns: 1fr 1fr; }
 
         .grid-cell {
@@ -111,13 +178,6 @@
 
         .last-row { border-bottom: none; }
 
-        @media (max-width: 1100px) {
-            .dashboard { flex-direction: column; align-items: center; padding: 20px; }
-            .column-left, .column-right { flex: 0 0 auto; width: 100%; max-width: 550px; }
-            .column-right { order: -1; margin-bottom: 30px; }
-            .sticky-wrapper { position: static; }
-        }
-
         /* Styling voor de balkjes in Card 5 */
         .bar-container {
             background: rgba(0, 0, 0, 0.3);
@@ -131,7 +191,7 @@
 
         .bar-fill {
             height: 100%;
-            width: 0%; /* Begint op 0, wordt later via JS gevuld */
+            width: 0%; 
             background: linear-gradient(90deg, #ff8c00, #ffb347);
             transition: width 0.3s ease;
         }
@@ -144,22 +204,26 @@
             border-bottom: 1px solid #ff8c00;
         }
 
-        /* Rode tekst voor kosten */
         .cost-text {
             color: #ff8c00;
             font-size: 0.8rem;
         }
 
-        /* Hard Mode Styles */
-        body.hard-mode {
-            background-color: #1a0a0a; /* Iets roder/donkerder */
+        /* Zorg dat de kaart zelf geen vreemde uitlijning krijgt door de column-flex van de card class */
+        #difficulty-card {
+            flex-direction: row !important; 
         }
 
-        body.hard-mode .card {
+        /* Hard Mode Styles */
+        body.hard-mode {
+            background-color: #1a0a0a;
+        }
+
+        body.hard-mode .card, body.hard-mode .map-card {
             border-color: #ff0000;
         }
 
-        body.hard-mode .card h1 {
+        body.hard-mode .card h1, body.hard-mode .map-card h1 {
             background: rgba(255, 0, 0, 0.25);
             border-bottom: 2px solid #ff0000;
         }
@@ -183,27 +247,28 @@
             background: linear-gradient(90deg, #ff0000, #ff4d4d);
         }
 
-        /* Specifieke styling voor de toggle */
-        #hardmode-toggle {
-            accent-color: #ff8c00;
-        }
-
         body.hard-mode #hardmode-toggle {
             accent-color: #ff0000;
         }
 
-        /* Zorg dat de kaart zelf geen vreemde uitlijning krijgt door de column-flex van de card class */
-        #difficulty-card {
-            flex-direction: row !important; 
+        #hardmode-toggle {
+            accent-color: #ff8c00;
         }
 
+        /* Responsiveness voor kleinere schermen */
+        @media (max-width: 1400px) {
+            .dashboard { flex-direction: column; align-items: center; padding: 20px; }
+            .column-left, .column-middle, .column-right { flex: 0 0 auto; width: 100%; max-width: 550px; }
+            .column-right { order: unset; margin-bottom: 30px; }
+            .sticky-wrapper { position: static; }
+        }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
+    
     <div class="column-left">
-        <!-- CARD 0: HARD MODE -->
         <div class="card" id="difficulty-card" style="margin-bottom: 0px;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 15px 20px; box-sizing: border-box;">
                 <span class="cell-label" style="letter-spacing: 2px; font-size: 1rem;">HARD MODE</span>
@@ -211,7 +276,6 @@
             </div>
         </div>
 
-        <!-- CARD 1: PRIMARY -->
         <div class="card">
             <h1>PRIMARY TARGET</h1>
             <select id="primary-select" onchange="calculate()">
@@ -225,7 +289,6 @@
             </select>
         </div>
 
-        <!-- CARD 2: SECONDARY -->
         <div class="card">
             <h1>SECONDARY TARGETS</h1>
             <div class="grid-row"><div class="grid-cell cell-icon"><img src="assets/cash.webp" class="item-icon"></div><div class="grid-cell cell-label">CASH</div><div class="grid-cell cell-info">78k-89k</div><div class="grid-cell"><input type="number" class="amount" data-min="78480" data-max="89420" value="0" min="0" oninput="calculate()"></div></div>
@@ -235,116 +298,121 @@
             <div class="grid-row last-row"><div class="grid-cell cell-icon"><img src="assets/gold.webp" class="item-icon"></div><div class="grid-cell cell-label">GOLD</div><div class="grid-cell cell-info">328k-333k</div><div class="grid-cell"><input type="number" class="amount" data-min="328584" data-max="333192" value="0" min="0" oninput="calculate()"></div></div>
         </div>
 
-        <!-- CARD 3: CREW CUT -->
         <div class="card">
             <h1>CREW CUT (%)</h1>
-            
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <span class="cell-label">HOST</span>
                 <input type="number" id="p1-pct" value="100" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
             </div>
-
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <span class="cell-label">PLAYER 2</span>
                 <input type="number" id="p2-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
             </div>
-
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <span class="cell-label">PLAYER 3</span>
                 <input type="number" id="p3-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
             </div>
-
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <span class="cell-label">PLAYER 4</span>
                 <input type="number" id="p4-pct" value="0" step="5" min="0" max="100" oninput="calculate(this)" style="width: 80px; text-align: right; background: transparent; border: none; color: #fff; font-size: 1rem;">
             </div>
-
             <div id="pct-warning" style="display: none; border-top: 1px solid #ff8c00;">TOTAAL MOET 100% ZIJN!</div>
         </div>
-
     </div>
-    <div class="column-left">
-        <!-- CARD 4: TOTAL TAKE -->
-        <div class="card">
-            <h1>Total Loot Estimate</h1>
-            <div style="padding: 20px; text-align: center;">
-                <div id="total-estimate-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
-                <div style="color: #aaa; font-size: 0.9rem;">
-                    Primary: <span id="total-primary-part">$ 0</span>
-                </div>
-                <div style="color: #aaa; font-size: 0.9rem;">
-                    Secondary: <span id="total-secondary-part">$ 0</span>
+
+    <div class="column-middle">
+        <div class="sticky-wrapper">
+            <div class="map-card">
+                <h1>COMPOUND MAP</h1>
+                <div class="map-container">
+                    <img src="assets/compound.png" alt="Plattegrond van de compound">
+                    
+                    <div class="marker" style="top: 52%; left: 43%;" data-title="El Rubio's Office / Basement"></div>
+                    <div class="marker" style="top: 46%; left: 56%;" data-title="West Storage"></div>
+                    <div class="marker" style="top: 73%; left: 38%;" data-title="South Storage"></div>
+                    <div class="marker" style="top: 65%; left: 86%;" data-title="North Storage"></div>
+                    <div class="marker" style="top: 34%; left: 19%;" data-title="Main Gate"></div>
                 </div>
             </div>
         </div>
-        
-        <!-- CARD 5: PLAYER BAG CAPACITY -->
-        <div class="card">
-            <h1>Player Bag Capacity</h1>
+    </div>
+
+    <div class="column-right">
+        <div class="sticky-wrapper">
+            <div class="card">
+                <h1>Total Loot Estimate</h1>
+                <div style="padding: 20px; text-align: center;">
+                    <div id="total-estimate-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
+                    <div style="color: #aaa; font-size: 0.9rem;">
+                        Primary: <span id="total-primary-part">$ 0</span>
+                    </div>
+                    <div style="color: #aaa; font-size: 0.9rem;">
+                        Secondary: <span id="total-secondary-part">$ 0</span>
+                    </div>
+                </div>
+            </div>
             
-            <!-- Host Bar -->
-            <div class="actual-take-row">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                    <span class="cell-label">Host</span>
-                    <span id="bar-text-p1" class="cell-money">0% FULL</span>
-                </div>
-                <div class="bar-container" style="display: flex;">
-                    <div id="bar-p1" style="display: flex; width: 100%; height: 100%;"></div>
-                </div>
-                <div id="legend-p1" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
-            </div>
-
-            <!-- Player 2 Bar -->
-            <div class="actual-take-row">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                    <span class="cell-label">Player 2</span>
-                    <span id="bar-text-p2" class="cell-money">0% FULL</span>
-                </div>
-                <div class="bar-container" style="display: flex;">
-                    <div id="bar-p2" style="display: flex; width: 100%; height: 100%;"></div>
-                </div>
-                <div id="legend-p2" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
-            </div>
-
-            <!-- Player 3 Bar -->
-            <div class="actual-take-row">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                    <span class="cell-label">Player 3</span>
-                    <span id="bar-text-p3" class="cell-money">0% FULL</span>
-                </div>
-                <div class="bar-container" style="display: flex;">
-                    <div id="bar-p3" style="display: flex; width: 100%; height: 100%;"></div>
-                </div>
-                <div id="legend-p3" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
-            </div>
-
-            <!-- Player 4 Bar -->
-            <div class="actual-take-row">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                    <span class="cell-label">Player 4</span>
-                    <span id="bar-text-p4" class="cell-money">0% FULL</span>
-                </div>
-                <div class="bar-container" style="display: flex;">
-                    <div id="bar-p4" style="display: flex; width: 100%; height: 100%;"></div>
-                </div>
-                <div id="legend-p4" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
-            </div>
-        </div>
-
-        <!-- CARD 6: ACTUAL TAKE -->
-        <div class="card">
-            <h1>Actual Take</h1>
-            <div style="padding: 20px; text-align: center;">
-                <div id="actual-total-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
+            <div class="card">
+                <h1>Player Bag Capacity</h1>
                 
-                <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px;">
-                    <span>Primary: <span id="actual-primary-part">$ 0</span></span>
-                    <span>Secondary: <span id="actual-secondary-part">$ 0</span></span>
-                    <span class="cost-text">Fencing Fee (10%): <span id="fencing-fee">$ 0</span></span>
-                    <span class="cost-text">Pavel's Cut (2%): <span id="pavel-cut">$ 0</span></span>
+                <div class="actual-take-row">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span class="cell-label">Host</span>
+                        <span id="bar-text-p1" class="cell-money">0% FULL</span>
+                    </div>
+                    <div class="bar-container" style="display: flex;">
+                        <div id="bar-p1" style="display: flex; width: 100%; height: 100%;"></div>
+                    </div>
+                    <div id="legend-p1" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
                 </div>
-                
-                <div id="actual-crew-list" style="border-top: 1px solid rgba(255,140,0,0.3); padding-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+
+                <div class="actual-take-row">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span class="cell-label">Player 2</span>
+                        <span id="bar-text-p2" class="cell-money">0% FULL</span>
+                    </div>
+                    <div class="bar-container" style="display: flex;">
+                        <div id="bar-p2" style="display: flex; width: 100%; height: 100%;"></div>
+                    </div>
+                    <div id="legend-p2" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+                </div>
+
+                <div class="actual-take-row">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span class="cell-label">Player 3</span>
+                        <span id="bar-text-p3" class="cell-money">0% FULL</span>
+                    </div>
+                    <div class="bar-container" style="display: flex;">
+                        <div id="bar-p3" style="display: flex; width: 100%; height: 100%;"></div>
+                    </div>
+                    <div id="legend-p3" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+                </div>
+
+                <div class="actual-take-row">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span class="cell-label">Player 4</span>
+                        <span id="bar-text-p4" class="cell-money">0% FULL</span>
+                    </div>
+                    <div class="bar-container" style="display: flex;">
+                        <div id="bar-p4" style="display: flex; width: 100%; height: 100%;"></div>
+                    </div>
+                    <div id="legend-p4" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 0.75rem;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h1>Actual Take</h1>
+                <div style="padding: 20px; text-align: center;">
+                    <div id="actual-total-display" style="font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px;">$ 0</div>
+                    
+                    <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: flex; flex-direction: column; gap: 2px;">
+                        <span>Primary: <span id="actual-primary-part">$ 0</span></span>
+                        <span>Secondary: <span id="actual-secondary-part">$ 0</span></span>
+                        <span class="cost-text">Fencing Fee (10%): <span id="fencing-fee">$ 0</span></span>
+                        <span class="cost-text">Pavel's Cut (2%): <span id="pavel-cut">$ 0</span></span>
+                    </div>
+                    
+                    <div id="actual-crew-list" style="border-top: 1px solid rgba(255,140,0,0.3); padding-top: 10px; display: flex; flex-direction: column; gap: 5px;"></div>
                 </div>
             </div>
         </div>
@@ -358,14 +426,13 @@
         } else {
             document.body.classList.remove('hard-mode');
         }
-        calculate(); // Herbereken direct
+        calculate(); 
     }
 
     function calculate() {
         const isHardMode = document.getElementById('hardmode-toggle').checked;
         const multiplier = isHardMode ? 1.10 : 1.0;
 
-        // Haal basiswaarde op en doe direct x 1.1 indien Hard Mode
         let primaryValue = parseInt(document.getElementById('primary-select').value) || 0;
         primaryValue = primaryValue * multiplier;
         
@@ -376,9 +443,6 @@
             { name: 'WEED',    weight: 37.50, minVal: 145980 * multiplier, maxVal: 149265 * multiplier, color: '#2ecc71' }, 
             { name: 'CASH',    weight: 25.00, minVal: 78480  * multiplier, maxVal: 89420  * multiplier, color: '#e74c3c' }  
         ];
-
-        // ... De rest van je bestaande calculate() code ...
-        // (Zorg dat je alle code binnen de functie behoudt vanaf 'const inputs = ...')
         
         const inputs = document.querySelectorAll('.amount');
         lootItems[0].count = parseInt(inputs[4].value) || 0; 
@@ -479,7 +543,6 @@
                     const row = document.createElement('div');
                     row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.fontSize = '0.85rem'; row.style.color = '#e0e0e0';
                     const label = p.id === 'p1' ? 'Host' : `Player ${p.id.replace('p', '')}`;
-                    // Let op: we gebruiken inline style voor de kleur zodat JS deze makkelijk kan vinden voor het rode thema
                     const colorHex = isHardMode ? '#ff0000' : '#ff8c00';
                     row.innerHTML = `<span style="font-weight: bold;">${label} (${p.pct}%):</span><span style="color: ${colorHex}; font-family: monospace;">$${playerMin.toLocaleString('nl-NL')} - $${playerMax.toLocaleString('nl-NL')}</span>`;
                     crewListContainer.appendChild(row);
