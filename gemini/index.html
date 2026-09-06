@@ -595,7 +595,7 @@
         return `${dag}-${maand}-${jaar}`; // Verwacht formaat op de site (bijv. 12-09-2026)
     }
 
-    // Automatisch invullen met uitgebreide debug-logging
+    // Automatisch invullen met Multi-Proxy Fallback
     autoFillBtn.addEventListener('click', async () => {
         const origineleTekst = autoFillBtn.innerText;
         autoFillBtn.innerText = 'Laden...';
@@ -603,89 +603,104 @@
 
         const teZoekenDatum = getEerstvolgendeZaterdagDatumString();
         const targetUrl = 'https://gemini-korfbal.nl/competitie/';
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
-        console.log("--- START DEBUG AUTOMATISCH INVULLEN ---");
+        // Lijst met betrouwbare CORS proxies (probeert de volgende als de eerste faalt)
+        const proxies = [
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`
+        ];
+
+        console.log("--- START AUTOMATISCH INVULLEN ---");
         console.log(`[DEBUG] Zoekdatum ingesteld op: "${teZoekenDatum}"`);
-        console.log(`[DEBUG] Bezig met ophalen via proxy: ${proxyUrl}`);
 
-        // Maak een controller aan om de aanvraag na 8 seconden af te breken bij verhanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        let htmlText = null;
+
+        for (const proxyUrl of proxies) {
+            try {
+                console.log(`[DEBUG] Poging via proxy: ${proxyUrl}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 sec timeout per proxy
+
+                const response = await fetch(proxyUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) continue;
+
+                if (proxyUrl.includes('allorigins')) {
+                    const data = await response.json();
+                    htmlText = data.contents;
+                } else {
+                    htmlText = await response.text();
+                }
+
+                if (htmlText && htmlText.length > 500) {
+                    console.log(`[DEBUG] Succesvol HTML opgehaald via: ${proxyUrl}`);
+                    break; // Gelukt, stop de loop
+                }
+            } catch (err) {
+                console.warn(`[DEBUG] Proxy mislukt (${proxyUrl}):`, err.message);
+            }
+        }
+
+        if (!htmlText) {
+            alert('Kon de gegevens van gemini-korfbal.nl niet ophalen. Alle proxies reageerden niet.');
+            autoFillBtn.innerText = origineleTekst;
+            autoFillBtn.disabled = false;
+            return;
+        }
 
         try {
-            const response = await fetch(proxyUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            console.log(`[DEBUG] Netwerk respons status: ${response.status} ${response.statusText}`);
-
-            if (!response.ok) throw new Error(`HTTP fout! Status: ${response.status}`);
-
-            const data = await response.json();
-            const htmlText = data.contents;
-
-            console.log(`[DEBUG] HTML succesvol ontvangen. Lengte: ${htmlText ? htmlText.length : 0} karakters.`);
-
-            if (!htmlText) {
-                throw new Error("Proxy gaf een lege respons terug.");
-            }
-
-            // DOMParser om de HTML-tabel uit te lezen
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
             const rows = doc.querySelectorAll('tr');
 
-            console.log(`[DEBUG] Aantal <tr> elementen gevonden op pagina: ${rows.length}`);
+            console.log(`[DEBUG] Aantal <tr> elementen gevonden: ${rows.length}`);
 
             const gevondenWedstrijden = [];
             const gevondenDatumsInTabel = new Set();
 
             rows.forEach((row, index) => {
-                if (index === 0) return; // Sla header-rij over
+                if (index === 0) return;
 
                 const cells = row.querySelectorAll('td');
                 if (cells.length > 3) {
                     const dateStr = cells[0].textContent.trim();
                     gevondenDatumsInTabel.add(dateStr);
 
-                    if (dateStr === teZoekenDatum) {
-                        const tijd = cells[1].textContent.trim();
-                        const team1 = cells[2].textContent.trim();
-                        const team2 = cells[3].textContent.trim();
-
+                    // Vergelijk datum (strip eventuele voorloop-nullen voor de zekerheid)
+                    if (normalizeDatum(dateStr) === normalizeDatum(teZoekenDatum)) {
                         gevondenWedstrijden.push({
-                            thuis: team1,
-                            gast: team2,
-                            tijd: tijd
+                            thuis: cells[2].textContent.trim(),
+                            gast: cells[3].textContent.trim(),
+                            tijd: cells[1].textContent.trim()
                         });
                     }
                 }
             });
 
-            console.log(`[DEBUG] Unieke datums gevonden in de tabel:`, Array.from(gevondenDatumsInTabel));
-            console.log(`[DEBUG] Aantal matchende wedstrijden voor ${teZoekenDatum}: ${gevondenWedstrijden.length}`);
+            console.log(`[DEBUG] Unieke datums op site:`, Array.from(gevondenDatumsInTabel));
 
             if (gevondenWedstrijden.length === 0) {
-                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.\n\nBekijk de console (F12) voor de datums die wel op de site staan.`);
+                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.\n\nBekijk F12 console voor datums op de site.`);
             } else {
-                console.log(`[DEBUG] Gevonden wedstrijden data:`, gevondenWedstrijden);
                 vulFormulierIn(gevondenWedstrijden);
             }
 
         } catch (error) {
-            console.error('[DEBUG ERROR] Er is iets misgegaan:', error);
-            
-            if (error.name === 'AbortError') {
-                alert('Het ophalen duurde te lang (Timeout). De proxy reageert niet.');
-            } else {
-                alert(`Fout bij ophalen: ${error.message}\n\nBekijk de console (F12) voor meer details.`);
-            }
+            console.error('[DEBUG ERROR]', error);
+            alert(`Fout bij verwerken data: ${error.message}`);
         } finally {
-            console.log("--- EINDE DEBUG AUTOMATISCH INVULLEN ---");
             autoFillBtn.innerText = origineleTekst;
             autoFillBtn.disabled = false;
         }
     });
+
+    // Hulpfunctie om datumnotaties te matchen (bijv. 06-09-2026 en 6-9-2026)
+    function normalizeDatum(str) {
+        return str.replace(/^0+/, '').replace(/-0+/g, '-').replace(/\//g, '-');
+    }
 
     // Functie om de opgehaalde data in de HTML-velden te plaatsen
     function vulFormulierIn(wedstrijden) {
