@@ -596,6 +596,7 @@
     }
 
     // Automatisch invullen via scraping van gemini-korfbal.nl
+    // Automatisch invullen via scraping van gemini-korfbal.nl
     autoFillBtn.addEventListener('click', async () => {
         const origineleTekst = autoFillBtn.innerText;
         autoFillBtn.innerText = 'Laden...';
@@ -603,16 +604,18 @@
 
         const teZoekenDatum = getEerstvolgendeZaterdagDatumString();
         const targetUrl = 'https://gemini-korfbal.nl/competitie/';
-        // Gebruik een CORS-proxy om browserblokkades te omzeilen
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        
+        // Gebruik AllOrigins als betrouwbare CORS-proxy
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
         try {
             const response = await fetch(proxyUrl);
             if (!response.ok) throw new Error('Netwerkfout bij ophalen pagina');
 
-            const htmlText = await response.text();
+            const data = await response.json();
+            const htmlText = data.contents; // AllOrigins geeft de HTML in het 'contents' veld
             
-            // Gebruik DOMParser om de HTML-tabel uit te lezen (zoals BeautifulSoup in Python)
+            // DOMParser om de HTML-tabel uit te lezen
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
             const rows = doc.querySelectorAll('tr');
@@ -620,7 +623,7 @@
             const gevondenWedstrijden = [];
 
             rows.forEach((row, index) => {
-                if (index === 0) return; // Sla de header-rij over
+                if (index === 0) return; // Sla header-rij over
 
                 const cells = row.querySelectorAll('td');
                 if (cells.length > 3) {
@@ -648,7 +651,7 @@
 
         } catch (error) {
             console.error('Fout bij automatisch invullen:', error);
-            alert('Het is niet gelukt om het schema op te halen. Controleer de netwerkverbinding.');
+            alert('Het is niet gelukt om het schema op te halen. Controleer of de website bereikbaar is.');
         } finally {
             autoFillBtn.innerText = origineleTekst;
             autoFillBtn.disabled = false;
