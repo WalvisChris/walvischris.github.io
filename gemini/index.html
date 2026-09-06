@@ -595,8 +595,7 @@
         return `${dag}-${maand}-${jaar}`; // Verwacht formaat op de site (bijv. 12-09-2026)
     }
 
-    // Automatisch invullen via scraping van gemini-korfbal.nl
-    // Automatisch invullen via scraping van gemini-korfbal.nl
+    // Automatisch invullen met uitgebreide debug-logging
     autoFillBtn.addEventListener('click', async () => {
         const origineleTekst = autoFillBtn.innerText;
         autoFillBtn.innerText = 'Laden...';
@@ -604,23 +603,42 @@
 
         const teZoekenDatum = getEerstvolgendeZaterdagDatumString();
         const targetUrl = 'https://gemini-korfbal.nl/competitie/';
-        
-        // Gebruik AllOrigins als betrouwbare CORS-proxy
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
+        console.log("--- START DEBUG AUTOMATISCH INVULLEN ---");
+        console.log(`[DEBUG] Zoekdatum ingesteld op: "${teZoekenDatum}"`);
+        console.log(`[DEBUG] Bezig met ophalen via proxy: ${proxyUrl}`);
+
+        // Maak een controller aan om de aanvraag na 8 seconden af te breken bij verhanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('Netwerkfout bij ophalen pagina');
+            const response = await fetch(proxyUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            console.log(`[DEBUG] Netwerk respons status: ${response.status} ${response.statusText}`);
+
+            if (!response.ok) throw new Error(`HTTP fout! Status: ${response.status}`);
 
             const data = await response.json();
-            const htmlText = data.contents; // AllOrigins geeft de HTML in het 'contents' veld
-            
+            const htmlText = data.contents;
+
+            console.log(`[DEBUG] HTML succesvol ontvangen. Lengte: ${htmlText ? htmlText.length : 0} karakters.`);
+
+            if (!htmlText) {
+                throw new Error("Proxy gaf een lege respons terug.");
+            }
+
             // DOMParser om de HTML-tabel uit te lezen
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
             const rows = doc.querySelectorAll('tr');
 
+            console.log(`[DEBUG] Aantal <tr> elementen gevonden op pagina: ${rows.length}`);
+
             const gevondenWedstrijden = [];
+            const gevondenDatumsInTabel = new Set();
 
             rows.forEach((row, index) => {
                 if (index === 0) return; // Sla header-rij over
@@ -628,6 +646,7 @@
                 const cells = row.querySelectorAll('td');
                 if (cells.length > 3) {
                     const dateStr = cells[0].textContent.trim();
+                    gevondenDatumsInTabel.add(dateStr);
 
                     if (dateStr === teZoekenDatum) {
                         const tijd = cells[1].textContent.trim();
@@ -643,16 +662,26 @@
                 }
             });
 
+            console.log(`[DEBUG] Unieke datums gevonden in de tabel:`, Array.from(gevondenDatumsInTabel));
+            console.log(`[DEBUG] Aantal matchende wedstrijden voor ${teZoekenDatum}: ${gevondenWedstrijden.length}`);
+
             if (gevondenWedstrijden.length === 0) {
-                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.`);
+                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.\n\nBekijk de console (F12) voor de datums die wel op de site staan.`);
             } else {
+                console.log(`[DEBUG] Gevonden wedstrijden data:`, gevondenWedstrijden);
                 vulFormulierIn(gevondenWedstrijden);
             }
 
         } catch (error) {
-            console.error('Fout bij automatisch invullen:', error);
-            alert('Het is niet gelukt om het schema op te halen. Controleer of de website bereikbaar is.');
+            console.error('[DEBUG ERROR] Er is iets misgegaan:', error);
+            
+            if (error.name === 'AbortError') {
+                alert('Het ophalen duurde te lang (Timeout). De proxy reageert niet.');
+            } else {
+                alert(`Fout bij ophalen: ${error.message}\n\nBekijk de console (F12) voor meer details.`);
+            }
         } finally {
+            console.log("--- EINDE DEBUG AUTOMATISCH INVULLEN ---");
             autoFillBtn.innerText = origineleTekst;
             autoFillBtn.disabled = false;
         }
