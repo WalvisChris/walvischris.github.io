@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Korfbal Wedstrijdoverzicht Genereren</title>
     <style>
+        /* Custom Fonts Inladen */
+        @font-face {
+            font-family: 'GeminiFont';
+            src: url('./assets/fonts/gemini.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'CairoFont';
+            src: url('./assets/fonts/cairo.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'HeadlineFont';
+            src: url('./assets/fonts/headline.ttf') format('truetype');
+        }
+
         :root {
             --primary-color: #0066cc;
             --success-color: #28a745;
@@ -38,6 +52,29 @@
             max-width: 600px;
             box-sizing: border-box;
             border: 1px solid var(--border-color);
+        }
+
+        /* Card Header met knop rechtsboven */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+        }
+
+        .btn-auto {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 14px;
+            font-size: 0.9rem;
+        }
+
+        .btn-auto:hover {
+            background-color: #0052a3;
         }
 
         h2 {
@@ -204,7 +241,10 @@
 <body>
 
 <div class="card">
-    <h2>Wedstrijden Toevoegen</h2>
+    <div class="card-header">
+        <h2>Wedstrijden Toevoegen</h2>
+        <button type="button" class="btn btn-auto" id="auto-fill-btn">Automatisch invullen</button>
+    </div>
     
     <datalist id="club-list"></datalist>
 
@@ -283,6 +323,11 @@
         updatePreview();
     };
 
+    // Wacht tot alle custom fonts geladen zijn voor een correcte eerste render
+    document.fonts.ready.then(() => {
+        updatePreview();
+    });
+
     // Laad clubdata in datalist
     if (typeof clubsData !== 'undefined') {
         clubsData.forEach(club => {
@@ -352,6 +397,22 @@
     // Hulpfunctie om clubnaam op te schonen
     function getSchoneNaam(waarde) {
         return waarde.replace(/\s*\([^)]*\)/, '').trim();
+    }
+
+    // Hulpfunctie om de tekst voor de eerstvolgende zaterdag op te bouwen
+    function getEerstvolgendeZaterdagTekst() {
+        const vandaag = new Date();
+        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
+        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
+        
+        const zaterdag = new Date(vandaag);
+        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
+
+        const dagNummer = zaterdag.getDate();
+        const maanden = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEC'];
+        const maandNaam = maanden[zaterdag.getMonth()];
+
+        return `ZATERDAG ${dagNummer} ${maandNaam}`;
     }
 
     // Functie voor LIVE preview updating
@@ -431,37 +492,58 @@
     }
 
     function tekenWedstrijden(ctx, wedstrijden) {
+        const geminiGeel = '#fbdc2c';
+        const canvasMiddenX = ctx.canvas.width / 2; // 540px
+
+        // --- HEADER SECTIE (GECENTREERD) ---
+        ctx.textAlign = 'center';
+
+        // 1. Titel "Wedstrijden" (HeadlineFont - 50% groter: 135px)
+        ctx.font = '135px HeadlineFont, Arial';
+        ctx.fillStyle = geminiGeel;
+        ctx.fillText('Wedstrijden', canvasMiddenX, 210);
+
+        // 2. Datum eerstvolgende zaterdag (CairoFont - blijft 42px)
+        const zaterdagTekst = getEerstvolgendeZaterdagTekst();
+        ctx.font = '42px CairoFont, Arial';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(zaterdagTekst, canvasMiddenX, 280);
+
+
+        // --- WEDSTRIJDEN SECTIE (LINKS UITGELIJD) ---
         if (wedstrijden.length === 0) return;
 
         ctx.textAlign = 'left';
 
         const startX = 100;
-        const startY = 320;
-        const blokHoogte = 450;
+        const startY = 480; // Iets naar beneden geschoven voor de grotere header
+        const blokHoogte = 440;
 
         wedstrijden.forEach((w, idx) => {
             const y = startY + (idx * blokHoogte);
 
-            // 1. Naam Thuis Team
-            ctx.font = 'bold 64px Arial';
-            ctx.fillStyle = isGemini(w.thuis) ? '#fbdc2c' : '#ffffff';
+            // 1. Naam Thuis Team (Vergroot naar 80px)
+            const thuisIsGemini = isGemini(w.thuis);
+            ctx.font = thuisIsGemini ? '80px GeminiFont, Arial' : '80px CairoFont, Arial';
+            ctx.fillStyle = thuisIsGemini ? geminiGeel : '#ffffff';
             ctx.fillText(w.thuis, startX, y);
 
-            // 2. Naam Gast Team
-            ctx.font = 'bold 64px Arial';
-            ctx.fillStyle = isGemini(w.gast) ? '#fbdc2c' : '#ffffff';
-            ctx.fillText(w.gast, startX, y + 80);
+            // 2. Naam Gast Team (Vergroot naar 80px)
+            const gastIsGemini = isGemini(w.gast);
+            ctx.font = gastIsGemini ? '80px GeminiFont, Arial' : '80px CairoFont, Arial';
+            ctx.fillStyle = gastIsGemini ? geminiGeel : '#ffffff';
+            ctx.fillText(w.gast, startX, y + 95);
 
             // 3. Tijd en Stad opbouwen
             const details = [];
             if (w.tijd) details.push(w.tijd);
             if (w.stad) details.push(w.stad);
 
-            // 4. Teken de regel met <TIJD>, <STAD>
+            // 4. Teken de regel met <TIJD> - <STAD> (Blijft 42px)
             if (details.length > 0) {
-                ctx.font = 'italic 42px Arial';
+                ctx.font = '42px CairoFont, Arial';
                 ctx.fillStyle = '#e2e8f0';
-                ctx.fillText(details.join(', '), startX, y + 145);
+                ctx.fillText(details.join(' - '), startX, y + 165);
             }
         });
     }
@@ -476,7 +558,6 @@
         const canvases = document.querySelectorAll('.preview-canvas');
         if (canvases.length === 0) return;
 
-        // Bepaal de datum van vandaag in DD.MM.YYYY formaat
         const vandaag = new Date();
         const dag = String(vandaag.getDate()).padStart(2, '0');
         const maand = String(vandaag.getMonth() + 1).padStart(2, '0');
@@ -495,6 +576,148 @@
             }, index * 300);
         });
     });
+
+    const autoFillBtn = document.getElementById('auto-fill-btn');
+
+    // Hulpfunctie om de datum van de eerstvolgende zaterdag als DD-MM-YYYY te formatteren
+    function getEerstvolgendeZaterdagDatumString() {
+        const vandaag = new Date();
+        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
+        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
+        
+        const zaterdag = new Date(vandaag);
+        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
+
+        const dag = String(zaterdag.getDate()).padStart(2, '0');
+        const maand = String(zaterdag.getMonth() + 1).padStart(2, '0');
+        const jaar = zaterdag.getFullYear();
+
+        return `${dag}-${maand}-${jaar}`; // Verwacht formaat op de site (bijv. 12-09-2026)
+    }
+
+    // Automatisch invullen via scraping van gemini-korfbal.nl
+    autoFillBtn.addEventListener('click', async () => {
+        const origineleTekst = autoFillBtn.innerText;
+        autoFillBtn.innerText = 'Laden...';
+        autoFillBtn.disabled = true;
+
+        const teZoekenDatum = getEerstvolgendeZaterdagDatumString();
+        const targetUrl = 'https://gemini-korfbal.nl/competitie/';
+        // Gebruik een CORS-proxy om browserblokkades te omzeilen
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+        try {
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Netwerkfout bij ophalen pagina');
+
+            const htmlText = await response.text();
+            
+            // Gebruik DOMParser om de HTML-tabel uit te lezen (zoals BeautifulSoup in Python)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const rows = doc.querySelectorAll('tr');
+
+            const gevondenWedstrijden = [];
+
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Sla de header-rij over
+
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 3) {
+                    const dateStr = cells[0].textContent.trim();
+
+                    if (dateStr === teZoekenDatum) {
+                        const tijd = cells[1].textContent.trim();
+                        const team1 = cells[2].textContent.trim();
+                        const team2 = cells[3].textContent.trim();
+
+                        gevondenWedstrijden.push({
+                            thuis: team1,
+                            gast: team2,
+                            tijd: tijd
+                        });
+                    }
+                }
+            });
+
+            if (gevondenWedstrijden.length === 0) {
+                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.`);
+            } else {
+                vulFormulierIn(gevondenWedstrijden);
+            }
+
+        } catch (error) {
+            console.error('Fout bij automatisch invullen:', error);
+            alert('Het is niet gelukt om het schema op te halen. Controleer de netwerkverbinding.');
+        } finally {
+            autoFillBtn.innerText = origineleTekst;
+            autoFillBtn.disabled = false;
+        }
+    });
+
+    // Functie om de opgehaalde data in de HTML-velden te plaatsen
+    function vulFormulierIn(wedstrijden) {
+        // Maak het huidige formulier leeg
+        container.innerHTML = '';
+
+        wedstrijden.forEach((w) => {
+            // Splits clubnaam en optionele teamaanduiding (bijv. "Gemini 1" of "Refleks J1")
+            const thuisSplits = splitsClubEnTeam(w.thuis);
+            const gastSplits = splitsClubEnTeam(w.gast);
+
+            const matchCard = document.createElement('div');
+            matchCard.className = 'match-card';
+            matchCard.innerHTML = `
+                <button type="button" class="btn-remove" onclick="removeMatch(this)" title="Verwijder wedstrijd">✕</button>
+                <div class="match-row">
+                    <div class="input-group">
+                        <label>Thuis club</label>
+                        <input type="text" list="club-list" class="thuis-input" value="${thuisSplits.club}" placeholder="Club/stad">
+                    </div>
+                    <div class="input-group team-group">
+                        <label>Team</label>
+                        <input type="text" class="thuis-team-input" value="${thuisSplits.team}" placeholder="J1">
+                    </div>
+                </div>
+                <div class="match-row">
+                    <div class="input-group">
+                        <label>Gast club</label>
+                        <input type="text" list="club-list" class="gast-input" value="${gastSplits.club}" placeholder="Club/stad">
+                    </div>
+                    <div class="input-group team-group">
+                        <label>Team</label>
+                        <input type="text" class="gast-team-input" value="${gastSplits.team}" placeholder="J1">
+                    </div>
+                </div>
+                <div class="match-row">
+                    <div class="input-group time-group">
+                        <label>Tijd</label>
+                        <input type="time" class="tijd-input" value="${w.tijd}">
+                    </div>
+                </div>
+            `;
+            container.appendChild(matchCard);
+        });
+
+        // Ververs direct de canvas previews
+        updatePreview();
+    }
+
+    // Hulpfunctie om team-toevoegingen (zoals 1, 2, A1, J1) uit de clubnaam te scheiden
+    function splitsClubEnTeam(volledigeNaam) {
+        const onderdelen = volledigeNaam.trim().split(' ');
+        if (onderdelen.length > 1) {
+            const laatsteDeel = onderdelen[onderdelen.length - 1];
+            // Controleer of het laatste deel een team-aanduiding is (bijv. 1, 2, A1, B2)
+            if (/^(\d+|[A-Z]\d+)$/i.test(laatsteDeel)) {
+                return {
+                    club: onderdelen.slice(0, -1).join(' '),
+                    team: laatsteDeel
+                };
+            }
+        }
+        return { club: volledigeNaam, team: '' };
+    }
 
     // Eerste initiële render
     updatePreview();
