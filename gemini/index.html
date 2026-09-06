@@ -6,16 +6,21 @@
     <title>Korfbal Wedstrijdoverzicht Genereren</title>
     <style>
         :root {
-            --primary-color: #0056b3;
+            --primary-color: #0066cc;
             --success-color: #28a745;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-            --border-color: #ccc;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --match-card-bg: #2a2a2a;
+            --border-color: #3f3f46;
+            --text-color: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --input-bg: #18181b;
         }
 
         body {
             font-family: Arial, sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -27,23 +32,24 @@
         .card {
             background-color: var(--card-bg);
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             padding: 24px;
             width: 100%;
             max-width: 600px;
             box-sizing: border-box;
+            border: 1px solid var(--border-color);
         }
 
         h2 {
             margin-top: 0;
-            color: #333;
+            color: var(--text-color);
             margin-bottom: 20px;
         }
 
         /* Wedstrijdkaart / Blok */
         .match-card {
             border: 1px solid var(--border-color);
-            background-color: #fafafa;
+            background-color: var(--match-card-bg);
             border-radius: 6px;
             padding: 16px;
             margin-bottom: 16px;
@@ -76,7 +82,7 @@
         .input-group label {
             font-size: 0.85rem;
             margin-bottom: 4px;
-            color: #666;
+            color: var(--text-muted);
             font-weight: bold;
         }
 
@@ -88,7 +94,18 @@
             width: 100%;
             box-sizing: border-box;
             height: 42px;
-            background-color: #fff;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            color-scheme: dark; /* Zorgt voor donkere klok/tijdpicker */
+        }
+
+        input[type="text"]::placeholder {
+            color: #71717a;
+        }
+
+        input[type="text"]:focus, input[type="time"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
         }
 
         .btn {
@@ -109,7 +126,7 @@
         }
 
         .btn-add:hover {
-            background-color: #003d80;
+            background-color: #0052a3;
         }
 
         .btn-download {
@@ -171,7 +188,7 @@
 
         .canvas-card h3 {
             margin: 0 0 10px 0;
-            color: #555;
+            color: var(--text-muted);
             font-size: 1.1rem;
         }
 
@@ -179,8 +196,8 @@
             width: 280px;
             aspect-ratio: 9 / 16;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            background-color: #eee;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background-color: #27272a;
         }
     </style>
 </head>
@@ -332,7 +349,7 @@
         return "";
     }
 
-    // Hulpfunctie om clubnaam op te schopen
+    // Hulpfunctie om clubnaam op te schonen
     function getSchoneNaam(waarde) {
         return waarde.replace(/\s*\([^)]*\)/, '').trim();
     }
@@ -425,12 +442,12 @@
         wedstrijden.forEach((w, idx) => {
             const y = startY + (idx * blokHoogte);
 
-            // 1. Naam Thuis Team (exact zoals ingegeven / uit clubs.js)
+            // 1. Naam Thuis Team
             ctx.font = 'bold 64px Arial';
             ctx.fillStyle = isGemini(w.thuis) ? '#fbdc2c' : '#ffffff';
             ctx.fillText(w.thuis, startX, y);
 
-            // 2. Naam Gast Team (exact zoals ingegeven / uit clubs.js)
+            // 2. Naam Gast Team
             ctx.font = 'bold 64px Arial';
             ctx.fillStyle = isGemini(w.gast) ? '#fbdc2c' : '#ffffff';
             ctx.fillText(w.gast, startX, y + 80);
@@ -462,24 +479,20 @@
         // Bepaal de datum van vandaag in DD.MM.YYYY formaat
         const vandaag = new Date();
         const dag = String(vandaag.getDate()).padStart(2, '0');
-        const maand = String(vandaag.getMonth() + 1).padStart(2, '0'); // Maand is 0-geindexeerd
+        const maand = String(vandaag.getMonth() + 1).padStart(2, '0');
         const jaar = vandaag.getFullYear();
         const datumString = `${dag}.${maand}.${jaar}`;
 
         canvases.forEach((canvas, index) => {
-            // Gebruik een korte timeout per afbeelding zodat de browser meerdere downloads tegelijk toestaat
             setTimeout(() => {
-                // Maak een tijdelijke link-element aan voor JPEG-export
                 const link = document.createElement('a');
                 link.download = `gemini_wedstrijden_${datumString}_${index + 1}.jpg`;
-                
-                // Exporteer canvas naar .jpg formaat met een hoge kwaliteit (0.95)
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            }, index * 300); // 300ms vertraging tussen elke download om blokkades te voorkomen
+            }, index * 300);
         });
     });
 
