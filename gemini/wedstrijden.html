@@ -112,7 +112,7 @@
             font-weight: bold;
         }
 
-        input[type="text"], input[type="time"] {
+        input[type="text"], input[type="time"], input[type="date"] {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -129,7 +129,7 @@
             color: #71717a;
         }
 
-        input[type="text"]:focus, input[type="time"]:focus {
+        input[type="text"]:focus, input[type="time"]:focus, input[type="date"]:focus {
             outline: none;
             border-color: var(--primary-color);
         }
@@ -242,6 +242,15 @@
 </head>
 <body>
 
+<!-- Bovenste Card: Wedstrijddatum -->
+<div class="card">
+    <h2>Wedstrijddatum</h2>
+    <div class="input-group">
+        <label for="wedstrijd-datum">Wedstrijddatum</label>
+        <input type="date" id="wedstrijd-datum">
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h2>Wedstrijden Toevoegen</h2>
@@ -308,6 +317,28 @@
     const downloadButton = document.getElementById('download-btn');
     const datalist = document.getElementById('club-list');
     const canvasesWrapper = document.getElementById('canvases-wrapper');
+    const datumInput = document.getElementById('wedstrijd-datum');
+
+    // Hulpfunctie om de eerstvolgende zaterdag te berekenen als Date object
+    function getEerstvolgendeZaterdagDate() {
+        const vandaag = new Date();
+        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
+        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
+        
+        const zaterdag = new Date(vandaag);
+        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
+        return zaterdag;
+    }
+
+    // Stel standaard de datumknop in op de eerstvolgende zaterdag (YYYY-MM-DD)
+    const zaterdagStandaard = getEerstvolgendeZaterdagDate();
+    const jjjj = zaterdagStandaard.getFullYear();
+    const mm = String(zaterdagStandaard.getMonth() + 1).padStart(2, '0');
+    const dd = String(zaterdagStandaard.getDate()).padStart(2, '0');
+    datumInput.value = `${jjjj}-${mm}-${dd}`;
+
+    // Luister naar datumwijzigingen voor live update
+    datumInput.addEventListener('change', updatePreview);
 
     // Laad achtergrondafbeelding vooraf in
     const bgImg = new Image();
@@ -396,25 +427,26 @@
         return "";
     }
 
-    // Hulpfunctie om clubnaam op te schonen
+    // Hulpfunctie om clubnaam op te schone
     function getSchoneNaam(waarde) {
         return waarde.replace(/\s*\([^)]*\)/, '').trim();
     }
 
-    // Hulpfunctie om de tekst voor de eerstvolgende zaterdag op te bouwen
-    function getEerstvolgendeZaterdagTekst() {
-        const vandaag = new Date();
-        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
-        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
-        
-        const zaterdag = new Date(vandaag);
-        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
+    // Hulpfunctie om de tekst voor de gekozen datum op te bouwen
+    function getGekozenDatumTekst() {
+        let gekozenDatum = new Date(datumInput.value);
+        if (isNaN(gekozenDatum.getTime())) {
+            gekozenDatum = getEerstvolgendeZaterdagDate();
+        }
 
-        const dagNummer = zaterdag.getDate();
+        const dagen = ['ZONDAG', 'MAANDAG', 'DINSDAG', 'WOENSDAG', 'DONDERDAG', 'VRIJDAG', 'ZATERDAG'];
         const maanden = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEC'];
-        const maandNaam = maanden[zaterdag.getMonth()];
 
-        return `ZATERDAG ${dagNummer} ${maandNaam}`;
+        const dagNaam = dagen[gekozenDatum.getDay()];
+        const dagNummer = gekozenDatum.getDate();
+        const maandNaam = maanden[gekozenDatum.getMonth()];
+
+        return `${dagNaam} ${dagNummer} ${maandNaam}`;
     }
 
     // Functie voor LIVE preview updating
@@ -505,11 +537,11 @@
         ctx.fillStyle = geminiGeel;
         ctx.fillText('Wedstrijden', canvasMiddenX, 210);
 
-        // 2. Datum eerstvolgende zaterdag (CairoFont - blijft 42px)
-        const zaterdagTekst = getEerstvolgendeZaterdagTekst();
+        // 2. Datum gekozen dag (CairoFont - blijft 42px)
+        const datumTekst = getGekozenDatumTekst();
         ctx.font = '42px CairoFont, Arial';
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillText(zaterdagTekst, canvasMiddenX, 280);
+        ctx.fillText(datumTekst, canvasMiddenX, 280);
 
 
         // --- WEDSTRIJDEN SECTIE (LINKS UITGELIJD) ---
@@ -581,18 +613,16 @@
 
     const autoFillBtn = document.getElementById('auto-fill-btn');
 
-    // Hulpfunctie om de datum van de eerstvolgende zaterdag als DD-MM-YYYY te formatteren
-    function getEerstvolgendeZaterdagDatumString() {
-        const vandaag = new Date();
-        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
-        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
-        
-        const zaterdag = new Date(vandaag);
-        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
+    // Hulpfunctie om de datum van het datumveld om te zetten naar DD-MM-YYYY
+    function getGekozenDatumString() {
+        let gekozenDatum = new Date(datumInput.value);
+        if (isNaN(gekozenDatum.getTime())) {
+            gekozenDatum = getEerstvolgendeZaterdagDate();
+        }
 
-        const dag = String(zaterdag.getDate()).padStart(2, '0');
-        const maand = String(zaterdag.getMonth() + 1).padStart(2, '0');
-        const jaar = zaterdag.getFullYear();
+        const dag = String(gekozenDatum.getDate()).padStart(2, '0');
+        const maand = String(gekozenDatum.getMonth() + 1).padStart(2, '0');
+        const jaar = gekozenDatum.getFullYear();
 
         return `${dag}-${maand}-${jaar}`; // Verwacht formaat op de site (bijv. 12-09-2026)
     }
@@ -603,7 +633,7 @@
         autoFillBtn.innerText = 'Laden...';
         autoFillBtn.disabled = true;
 
-        const teZoekenDatum = getEerstvolgendeZaterdagDatumString();
+        const teZoekenDatum = getGekozenDatumString();
         const targetUrl = 'https://gemini-korfbal.nl/competitie/';
 
         // Lijst met betrouwbare CORS proxies (probeert de volgende als de eerste faalt)
@@ -685,7 +715,7 @@
             console.log(`[DEBUG] Unieke datums op site:`, Array.from(gevondenDatumsInTabel));
 
             if (gevondenWedstrijden.length === 0) {
-                alert(`Geen wedstrijden gevonden voor zaterdag ${teZoekenDatum}.\n\nBekijk F12 console voor datums op de site.`);
+                alert(`Geen wedstrijden gevonden voor ${teZoekenDatum}.\n\nBekijk F12 console voor datums op de site.`);
             } else {
                 vulFormulierIn(gevondenWedstrijden);
             }
