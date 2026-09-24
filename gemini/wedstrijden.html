@@ -415,22 +415,41 @@
         updatePreview();
     }
 
-    // Hulpfunctie om de stad te achterhalen
+    // Hulpfunctie om de stad te achterhalen op basis van clubsData
     function getStadVanInput(waarde) {
-        const match = waarde.match(/\(([^)]+)\)/);
-        if (match) return match[1];
+        if (!waarde) return "";
 
         if (typeof clubsData !== 'undefined') {
-            const club = clubsData.find(c => c.naam.toLowerCase() === waarde.toLowerCase());
+            // Zoek de club op basis van de exacte optie of naam
+            const club = clubsData.find(c => 
+                `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
+                c.naam.toLowerCase() === waarde.toLowerCase() ||
+                c.naam.toLowerCase() === getSchoneNaam(waarde).toLowerCase()
+            );
+            
             if (club) return club.stad;
         }
+
         return "";
     }
 
     // Hulpfunctie om clubnaam op te schone
     function getSchoneNaam(waarde) {
-        return waarde.replace(/\s*\([^)]*\)/, '').trim();
+    if (!waarde) return "";
+
+    // 1. Controleer of de invoer overeenkomt met een optie uit clubsData
+    if (typeof clubsData !== 'undefined') {
+        const club = clubsData.find(c => 
+            `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
+            c.naam.toLowerCase() === waarde.toLowerCase()
+        );
+        // Geef de exacte naam uit clubs.js terug (bijv. "Vitesse (Ba)")
+        if (club) return club.naam; 
     }
+
+    // 2. Als het een handmatige invoer is, strip eventueel de (Stad) als die uit de datalist kwam
+    return waarde.replace(/\s*\([^)]*\)$/, '').trim();
+}
 
     // Hulpfunctie om de tekst voor de gekozen datum op te bouwen
     function getGekozenDatumTekst() {
