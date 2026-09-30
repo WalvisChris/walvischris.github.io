@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity C# EditorCard Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        code, textarea.code-font, input.code-font {
+            font-family: 'Fira Code', monospace;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header Section -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-20 px-6 py-3.5">
+        <div class="max-w-[1700px] mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight">Unity C# EditorCard Generator</h1>
+                    <p class="text-xs text-slate-400">Generate EditorCard classes with TMPro bindings, typed setters & EditorCardBuilder Create factory</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="loadPresetBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span>Load Demo Data</span>
+                </button>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    ModdingHelper Tool
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[1fr_2.4fr] gap-6 h-[calc(100vh-73px)]">
+        
+        <!-- Left Panel: User Inputs -->
+        <section class="flex flex-col bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-xl min-h-0">
+            <div class="p-4 bg-slate-800 border-b border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    <h2 class="font-semibold text-slate-200 text-sm">Configuration</h2>
+                </div>
+                <button id="clearBtn" class="text-xs text-slate-400 hover:text-slate-200 transition-colors px-2.5 py-1 rounded bg-slate-700/50 hover:bg-slate-700">
+                    Clear
+                </button>
+            </div>
+
+            <div class="p-4 space-y-4 flex-1 flex flex-col overflow-y-auto">
+                <!-- Class Name Input -->
+                <div class="space-y-1.5">
+                    <label for="classNameInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                        Class Name
+                    </label>
+                    <div class="relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-xs font-mono select-none">
+                            EditorCard_Custom_
+                        </div>
+                        <input 
+                            type="text" 
+                            id="classNameInput" 
+                            class="code-font w-full pl-36 pr-4 py-2 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm placeholder-slate-600"
+                            placeholder="PlayerNetwork"
+                            value="PlayerNetwork"
+                            spellcheck="false"
+                        />
+                    </div>
+                    <p class="text-[11px] text-slate-400">Target Class: <code id="fullClassNamePreview" class="text-indigo-300 font-mono">EditorCard_Custom_PlayerNetwork</code></p>
+                </div>
+
+                <!-- Textarea for Variables -->
+                <div class="flex-1 flex flex-col space-y-1.5 min-h-[200px]">
+                    <div class="flex items-center justify-between">
+                        <label for="inputVars" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                            Variables
+                        </label>
+                        <span class="text-[11px] text-slate-400">One variable per line</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded border border-slate-700/50 font-mono">
+                        Syntax: <span class="text-indigo-300">&lt;datatype&gt; &lt;variableName&gt;</span>
+                    </div>
+                    <textarea 
+                        id="inputVars" 
+                        class="code-font flex-1 w-full p-3.5 bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none leading-relaxed text-sm placeholder-slate-600"
+                        placeholder="int equippedItem&#10;int characterId&#10;int hatId&#10;bool crouching"
+                        spellcheck="false"
+>int equippedItem
+int characterId
+int hatId
+bool crouching</textarea>
+                </div>
+
+                <!-- Information Panel -->
+                <div class="bg-slate-900/80 border border-slate-700/50 rounded-lg p-3 text-xs space-y-1.5 text-slate-300">
+                    <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Generated EditorCard Architecture:</span>
+                    </div>
+                    <ul class="space-y-1 text-[11px] text-slate-400 pl-4 list-disc">
+                        <li><code class="text-indigo-300">Initialize(...)</code> for TMPro UI assignment</li>
+                        <li><code class="text-indigo-300">Set&lt;Var&gt;(...)</code> with ToString/Bool/Vector formatting</li>
+                        <li><code class="text-indigo-300">SetValues(...)</code> master batch updates</li>
+                        <li><code class="text-emerald-300">Create(...)</code> with EditorCardBuilder rows & cardObj</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Panel Footer -->
+            <div class="p-3.5 bg-slate-800/80 border-t border-slate-700/60 flex items-center justify-between">
+                <label class="flex items-center space-x-2.5 cursor-pointer group">
+                    <input type="checkbox" id="serializeOption" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 transition cursor-pointer">
+                    <span class="text-xs font-medium text-slate-300 group-hover:text-white transition">Include <code class="text-amber-400 text-xs">[SerializeField]</code> attribute</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Right Panel: Generated C# Output -->
+        <section class="flex flex-col bg-slate-800/50 border border-slate-700/60 rounded-xl overflow-hidden shadow-xl min-h-0">
+            <div class="p-4 bg-slate-800 border-b border-slate-700/60 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <h2 class="font-semibold text-slate-200 text-sm">Generated C# Code</h2>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="varCount" class="text-xs text-slate-400 font-medium">4 variables</span>
+                </div>
+            </div>
+
+            <!-- Code Viewer -->
+            <div class="flex-1 p-4 flex flex-col relative bg-slate-950 overflow-hidden">
+                <div class="absolute top-6 right-6 z-10">
+                    <button 
+                        id="copyBtn" 
+                        class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 transition-all duration-200 active:scale-95"
+                    >
+                        <svg id="copyIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 001-2h2a2 2 0 001 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                        <span id="copyBtnText">Copy Code</span>
+                    </button>
+                </div>
+
+                <pre class="flex-1 p-4 bg-slate-900/90 rounded-lg border border-slate-800 text-slate-300 overflow-auto leading-relaxed text-xs sm:text-sm code-font select-text"><code id="codeOutput"></code></pre>
+            </div>
+
+            <!-- Status Footer -->
+            <div class="p-3.5 bg-slate-800/80 border-t border-slate-700/60 text-xs text-slate-400 flex justify-between items-center">
+                <span class="truncate pr-2">Namespace: <code class="text-indigo-300 font-mono">ModdingHelper.CustomEditor.EditorCards</code></span>
+                <span id="statusIndicator" class="text-emerald-400 flex items-center space-x-1 shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Live Synced</span>
+                </span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript C# Generator Logic -->
+    <script>
+        // DOM Element References
+        const classNameInput = document.getElementById('classNameInput');
+        const fullClassNamePreview = document.getElementById('fullClassNamePreview');
+        const inputVars = document.getElementById('inputVars');
+        const codeOutput = document.getElementById('codeOutput');
+        const serializeOption = document.getElementById('serializeOption');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyBtnText = document.getElementById('copyBtnText');
+        const copyIcon = document.getElementById('copyIcon');
+        const clearBtn = document.getElementById('clearBtn');
+        const loadPresetBtn = document.getElementById('loadPresetBtn');
+        const varCount = document.getElementById('varCount');
+
+        // Capitalize first letter
+        function capitalize(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // camelCase string
+        function camelCase(str) {
+            if (!str) return '';
+            return str.charAt(0).toLowerCase() + str.slice(1);
+        }
+
+        // Convert camelCase or PascalCase identifier to Title Case Label (e.g. "equippedItem" -> "Equipped Item")
+        function formatToTitleCase(str) {
+            if (!str) return '';
+            // Insert space before uppercase letters that follow lowercase letters
+            let result = str.replace(/([a-z])([A-Z])/g, '$1 $2');
+            // Insert space before capital letters followed by lowercase (handles acronyms)
+            result = result.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+            // Capitalize each word
+            return result.split(/[\s_]+/).map(w => capitalize(w)).join(' ');
+        }
+
+        // Sanitize C# Identifiers
+        function sanitizeIdentifier(str) {
+            return str.replace(/[^a-zA-Z0-9_]/g, '');
+        }
+
+        // Escape HTML for Code Display
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Get Parameter Short Name for Setter Methods
+        function getParamNameForDataType(dataType) {
+            if (!dataType) return 'v';
+            const cleanType = dataType.toLowerCase();
+            
+            if (cleanType === 'bool' || cleanType === 'boolean') return 'b';
+            if (cleanType === 'float') return 'f';
+            if (cleanType === 'int' || cleanType === 'int32' || cleanType === 'integer') return 'i';
+            if (cleanType === 'string') return 's';
+            if (cleanType === 'ulong' || cleanType === 'uint' || cleanType === 'uint32' || cleanType === 'uint64') return 'u';
+            if (cleanType === 'double') return 'd';
+            if (cleanType === 'long') return 'l';
+            if (cleanType === 'vector3') return 'v';
+
+            return cleanType.charAt(0) || 'v';
+        }
+
+        // Main C# Code Generator Function
+        function generateCode() {
+            const rawClassName = classNameInput.value.trim() || 'MyClass';
+            const sanitizedClassName = sanitizeIdentifier(rawClassName);
+            const fullClassName = `EditorCard_Custom_${sanitizedClassName}`;
+            fullClassNamePreview.textContent = fullClassName;
+
+            const rawInput = inputVars.value;
+            const lines = rawInput.split('\n');
+            const useSerializeField = serializeOption.checked;
+            
+            const fieldDeclarations = [];
+            const initParamList = ['TextMeshProUGUI titleText'];
+            const initAssignments = ['            this.titleText = titleText;'];
+            const setterMethods = [];
+            const setValuesParams = [];
+            const setValuesCalls = [];
+            const createParams = ['Transform contentParent', 'string title'];
+            const createRowCalls = [];
+            const createInitArgs = ['titleTMP'];
+            const createSetValuesArgs = [];
+
+            let validCount = 0;
+
+            const serializePrefix = useSerializeField ? '[SerializeField] ' : '';
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+
+                const parts = trimmedLine.split(/\s+/);
+                let dataType = 'string';
+                let varName = '';
+
+                if (parts.length >= 2) {
+                    dataType = parts[0];
+                    varName = parts[1];
+                } else if (parts.length === 1) {
+                    varName = parts[0];
+                }
+
+                dataType = sanitizeIdentifier(dataType);
+                varName = sanitizeIdentifier(varName);
+
+                if (varName && varName.toLowerCase() !== 'title') {
+                    validCount++;
+                    const cleanType = dataType.toLowerCase();
+                    const isVector3 = cleanType === 'vector3';
+                    const isBool = cleanType === 'bool' || cleanType === 'boolean';
+                    const isFloat = cleanType === 'float';
+
+                    const capVarName = capitalize(varName);
+                    const camelVarName = camelCase(varName);
+                    const paramName = getParamNameForDataType(dataType);
+                    const labelTitle = formatToTitleCase(varName);
+
+                    if (isVector3) {
+                        const textVarName = `${varName}Texts`;
+                        const tmpVarName = `${camelVarName}TMP`;
+
+                        fieldDeclarations.push(`        ${serializePrefix}private TextMeshProUGUI[] ${textVarName} = new TextMeshProUGUI[3];`);
+                        initParamList.push(`TextMeshProUGUI[] ${textVarName}`);
+                        initAssignments.push(`            this.${textVarName} = ${textVarName};`);
+                        setterMethods.push(`        public void Set${capVarName}(Vector3 v) => UpdateVectorTexts(${textVarName}, v);`);
+                        
+                        createRowCalls.push(`            TextMeshProUGUI[] ${tmpVarName} = EditorCardBuilder.CreateVectorRow(body, "${labelTitle}");`);
+                        createInitArgs.push(tmpVarName);
+                    } else if (isBool) {
+                        const textVarName = `${varName}Text`;
+                        const tmpVarName = `${camelVarName}TMP`;
+
+                        fieldDeclarations.push(`        ${serializePrefix}private TextMeshProUGUI ${textVarName};`);
+                        initParamList.push(`TextMeshProUGUI ${textVarName}`);
+                        initAssignments.push(`            this.${textVarName} = ${textVarName};`);
+                        setterMethods.push(`        public void Set${capVarName}(bool b) => UpdateBoolText(${textVarName}, b);`);
+
+                        createRowCalls.push(`            TextMeshProUGUI ${tmpVarName} = EditorCardBuilder.CreateBoolRow(body, "${labelTitle}");`);
+                        createInitArgs.push(tmpVarName);
+                    } else {
+                        const textVarName = `${varName}Text`;
+                        const tmpVarName = `${camelVarName}TMP`;
+
+                        fieldDeclarations.push(`        ${serializePrefix}private TextMeshProUGUI ${textVarName};`);
+                        initParamList.push(`TextMeshProUGUI ${textVarName}`);
+                        initAssignments.push(`            this.${textVarName} = ${textVarName};`);
+
+                        let setterBody = isFloat 
+                            ? `UpdateStringText(${textVarName}, ${paramName}.ToString("F2"));` 
+                            : `UpdateStringText(${textVarName}, ${paramName}.ToString());`;
+
+                        setterMethods.push(`        public void Set${capVarName}(${dataType} ${paramName}) => ${setterBody}`);
+
+                        createRowCalls.push(`            TextMeshProUGUI ${tmpVarName} = EditorCardBuilder.CreateValueRow(body, "${labelTitle}");`);
+                        createInitArgs.push(tmpVarName);
+                    }
+
+                    setValuesParams.push(`${dataType} ${camelVarName}`);
+                    setValuesCalls.push(`            Set${capVarName}(${camelVarName});`);
+
+                    createParams.push(`${dataType} ${camelVarName}`);
+                    createSetValuesArgs.push(camelVarName);
+                }
+            });
+
+            // Format multiline parameter lists for legibility
+            let formattedInitParams = initParamList.join(', ');
+            if (formattedInitParams.length > 70) {
+                formattedInitParams = initParamList.join(',\n            ');
+            }
+
+            let formattedSetValuesParams = setValuesParams.join(', ');
+            if (formattedSetValuesParams.length > 70) {
+                formattedSetValuesParams = setValuesParams.join(',\n            ');
+            }
+
+            let formattedCreateParams = createParams.join(', ');
+            if (formattedCreateParams.length > 70) {
+                formattedCreateParams = createParams.join(',\n            ');
+            }
+
+            const formattedAssignments = initAssignments.join('\n');
+            const formattedSetters = setterMethods.join('\n');
+            const formattedSetValuesCalls = setValuesCalls.join('\n');
+            const formattedCreateRows = createRowCalls.join('\n');
+            const formattedCreateInitArgs = createInitArgs.join(', ');
+            const formattedCreateSetValuesArgs = createSetValuesArgs.join(', ');
+
+            const rawFullCode = `using TMPro;
+using UnityEngine;
+
+namespace ModdingHelper.CustomEditor.EditorCards
+{
+    internal class ${fullClassName} : EditorCardBase
+    {
+${fieldDeclarations.join('\n')}
+
+        public void Initialize(${formattedInitParams})
+        {
+${formattedAssignments}
+        }
+
+${formattedSetters}
+
+        public void SetValues(${formattedSetValuesParams})
+        {
+${formattedSetValuesCalls}
+        }
+
+        public static ${fullClassName} Create(${formattedCreateParams})
+        {
+            var (cardObj, body, titleTMP) = EditorCardBuilder.CreateBaseCard(contentParent, "Card_Custom_${sanitizedClassName}", title);
+
+${formattedCreateRows}
+
+            ${fullClassName} card = cardObj.AddComponent<${fullClassName}>();
+            card.Initialize(${formattedCreateInitArgs});
+            card.SetValues(${formattedCreateSetValuesArgs});
+
+            return card;
+        }
+    }
+}`;
+
+            let highlightedCode = escapeHtml(rawFullCode);
+
+            // Syntax Highlighting
+            highlightedCode = highlightedCode
+                .replace(/\b(using|namespace|internal|class|private|public|static|void|new|return|var)\b/g, '<span class="text-purple-400">$1</span>')
+                .replace(/\b(TextMeshProUGUI|EditorCardBase|EditorCardBuilder|Transform)\b/g, '<span class="text-teal-300">$1</span>')
+                .replace(/\b(this)\b/g, '<span class="text-rose-400">$1</span>')
+                .replace(/\[SerializeField\]/g, '<span class="text-amber-400">[SerializeField]</span>')
+                .replace(/(EditorCard_Custom_\w+|Card_Custom_\w+)/g, '<span class="text-yellow-200">$1</span>')
+                .replace(/\b(Set\w+|Initialize|SetValues|Create|CreateBaseCard|CreateValueRow|CreateBoolRow|CreateVectorRow|AddComponent|UpdateStringText|UpdateBoolText|UpdateVectorTexts)\b/g, '<span class="text-blue-300">$1</span>')
+                .replace(/(\w+Text|\w+Texts|\w+TMP)(;|,|\)|\[)/g, '<span class="text-indigo-200">$1</span><span class="text-slate-400">$2</span>')
+                .replace(/\b(float|int|bool|ulong|uint|string|long|double|ushort|Vector3)\b/g, '<span class="text-emerald-400">$1</span>');
+
+            codeOutput.innerHTML = highlightedCode;
+            
+            // Clean any non-breaking space characters from template literals
+            const sanitizedPlainCode = rawFullCode.replace(/\u00A0/g, ' ');
+            codeOutput.dataset.plainCode = sanitizedPlainCode;
+
+            varCount.textContent = `${validCount} ${validCount === 1 ? 'variable' : 'variables'}`;
+        }
+
+        // Copy to Clipboard with Visual Feedback
+        async function copyToClipboard() {
+            // 1. Get raw plain code
+            let textToCopy = codeOutput.dataset.plainCode || codeOutput.innerText;
+            if (!textToCopy) return;
+
+            // 2. Replace non-breaking spaces (\u00A0) with standard spaces (\u0020)
+            textToCopy = textToCopy.replace(/\u00A0/g, ' ');
+
+            try {
+                // 3. Modern Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(textToCopy);
+                } else {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = textToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+
+                // Visual Feedback
+                const originalText = copyBtnText.textContent;
+                copyBtnText.textContent = 'Copied!';
+                copyBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                copyIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>`;
+
+                setTimeout(() => {
+                    copyBtnText.textContent = originalText;
+                    copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                    copyBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                    copyIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 001-2h2a2 2 0 001 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>`;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy code: ', err);
+            }
+        }
+
+        // Event Listeners
+        classNameInput.addEventListener('input', generateCode);
+        inputVars.addEventListener('input', generateCode);
+        serializeOption.addEventListener('change', generateCode);
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        clearBtn.addEventListener('click', () => {
+            classNameInput.value = '';
+            inputVars.value = '';
+            generateCode();
+            classNameInput.focus();
+        });
+
+        loadPresetBtn.addEventListener('click', () => {
+            classNameInput.value = 'PlayerNetwork';
+            inputVars.value = `int equippedItem\nint characterId\nint hatId\nbool crouching\nVector3 position\nfloat movementSpeed`;
+            generateCode();
+        });
+
+        // Initialize Generator on Page Load
+        window.onload = function() {
+            generateCode();
+        };
+    </script>
+</body>
+</html>
