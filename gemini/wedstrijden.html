@@ -318,6 +318,10 @@
     const datalist = document.getElementById('club-list');
     const canvasesWrapper = document.getElementById('canvases-wrapper');
     const datumInput = document.getElementById('wedstrijd-datum');
+    const autoFillBtn = document.getElementById('auto-fill-btn');
+
+    // CONFIGURATIE
+    const SPORTLINK_CLIENT_ID = 'NzuwK8DLwE'; // Directe Sportlink API key
 
     // Hulpfunctie om de eerstvolgende zaterdag te berekenen als Date object
     function getEerstvolgendeZaterdagDate() {
@@ -420,7 +424,6 @@
         if (!waarde) return "";
 
         if (typeof clubsData !== 'undefined') {
-            // Zoek de club op basis van de exacte optie of naam
             const club = clubsData.find(c => 
                 `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
                 c.naam.toLowerCase() === waarde.toLowerCase() ||
@@ -435,21 +438,18 @@
 
     // Hulpfunctie om clubnaam op te schone
     function getSchoneNaam(waarde) {
-    if (!waarde) return "";
+        if (!waarde) return "";
 
-    // 1. Controleer of de invoer overeenkomt met een optie uit clubsData
-    if (typeof clubsData !== 'undefined') {
-        const club = clubsData.find(c => 
-            `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
-            c.naam.toLowerCase() === waarde.toLowerCase()
-        );
-        // Geef de exacte naam uit clubs.js terug (bijv. "Vitesse (Ba)")
-        if (club) return club.naam; 
+        if (typeof clubsData !== 'undefined') {
+            const club = clubsData.find(c => 
+                `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
+                c.naam.toLowerCase() === waarde.toLowerCase()
+            );
+            if (club) return club.naam; 
+        }
+
+        return waarde.replace(/\s*\([^)]*\)$/, '').trim();
     }
-
-    // 2. Als het een handmatige invoer is, strip eventueel de (Stad) als die uit de datalist kwam
-    return waarde.replace(/\s*\([^)]*\)$/, '').trim();
-}
 
     // Hulpfunctie om de tekst voor de gekozen datum op te bouwen
     function getGekozenDatumTekst() {
@@ -498,7 +498,6 @@
             }
         });
 
-        // Verdeel alle wedstrijden in groepjes van maximaal 3
         const maxPerPagina = 3;
         const paginaGroepen = [];
         for (let i = 0; i < alleWedstrijden.length; i += maxPerPagina) {
@@ -531,7 +530,6 @@
 
             const ctx = canvas.getContext('2d');
             
-            // Teken achtergrond
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (bgLoaded) {
                 ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
@@ -544,55 +542,65 @@
         });
     }
 
+    // HULPFUNCTIE: Schaalt de tekst automatisch als hij breder is dan maxBreedte
+    function tekenAangepasteTekst(ctx, tekst, x, y, maxBreedte, basisGrootte, fontFamilie, kleur) {
+        let grootte = basisGrootte;
+        ctx.font = `${grootte}px ${fontFamilie}`;
+        
+        // Zorg ervoor dat de tekst niet breder wordt dan maxBreedte (minimale grootte = 30px)
+        while (ctx.measureText(tekst).width > maxBreedte && grootte > 30) {
+            grootte -= 2;
+            ctx.font = `${grootte}px ${fontFamilie}`;
+        }
+        
+        ctx.fillStyle = kleur;
+        ctx.fillText(tekst, x, y);
+    }
+
     function tekenWedstrijden(ctx, wedstrijden) {
         const geminiGeel = '#fbdc2c';
-        const canvasMiddenX = ctx.canvas.width / 2; // 540px
+        const canvasMiddenX = ctx.canvas.width / 2;
 
-        // --- HEADER SECTIE (GECENTREERD) ---
         ctx.textAlign = 'center';
 
-        // 1. Titel "Wedstrijden" (HeadlineFont - 50% groter: 135px)
         ctx.font = '135px HeadlineFont, Arial';
         ctx.fillStyle = geminiGeel;
         ctx.fillText('Wedstrijden', canvasMiddenX, 210);
 
-        // 2. Datum gekozen dag (CairoFont - blijft 42px)
         const datumTekst = getGekozenDatumTekst();
         ctx.font = '42px CairoFont, Arial';
         ctx.fillStyle = '#e2e8f0';
         ctx.fillText(datumTekst, canvasMiddenX, 280);
 
-
-        // --- WEDSTRIJDEN SECTIE (LINKS UITGELIJD) ---
         if (wedstrijden.length === 0) return;
 
         ctx.textAlign = 'left';
 
         const startX = 100;
-        const startY = 480; // Iets naar beneden geschoven voor de grotere header
+        const startY = 480;
         const blokHoogte = 440;
+        const maxTekstBreedte = 880; // 1080px canvas - 2x 100px randmarge
 
         wedstrijden.forEach((w, idx) => {
             const y = startY + (idx * blokHoogte);
 
-            // 1. Naam Thuis Team (Vergroot naar 80px)
+            // Thuis team (automatisch geschaald)
             const thuisIsGemini = isGemini(w.thuis);
-            ctx.font = thuisIsGemini ? '80px GeminiFont, Arial' : '80px CairoFont, Arial';
-            ctx.fillStyle = thuisIsGemini ? geminiGeel : '#ffffff';
-            ctx.fillText(w.thuis, startX, y);
+            const thuisFont = thuisIsGemini ? 'GeminiFont, Arial' : 'CairoFont, Arial';
+            const thuisKleur = thuisIsGemini ? geminiGeel : '#ffffff';
+            tekenAangepasteTekst(ctx, w.thuis, startX, y, maxTekstBreedte, 80, thuisFont, thuisKleur);
 
-            // 2. Naam Gast Team (Vergroot naar 80px)
+            // Gast team (automatisch geschaald)
             const gastIsGemini = isGemini(w.gast);
-            ctx.font = gastIsGemini ? '80px GeminiFont, Arial' : '80px CairoFont, Arial';
-            ctx.fillStyle = gastIsGemini ? geminiGeel : '#ffffff';
-            ctx.fillText(w.gast, startX, y + 95);
+            const gastFont = gastIsGemini ? 'GeminiFont, Arial' : 'CairoFont, Arial';
+            const gastKleur = gastIsGemini ? geminiGeel : '#ffffff';
+            tekenAangepasteTekst(ctx, w.gast, startX, y + 95, maxTekstBreedte, 80, gastFont, gastKleur);
 
-            // 3. Tijd en Stad opbouwen
+            // Tijd en stad
             const details = [];
             if (w.tijd) details.push(w.tijd);
             if (w.stad) details.push(w.stad);
 
-            // 4. Teken de regel met <TIJD> - <STAD> (Blijft 42px)
             if (details.length > 0) {
                 ctx.font = '42px CairoFont, Arial';
                 ctx.fillStyle = '#e2e8f0';
@@ -601,12 +609,11 @@
         });
     }
 
-    // Controleert of de ingevoerde naam "GEMINI" bevat
     function isGemini(naam) {
         return naam.toUpperCase().includes('GEMINI');
     }
 
-    // Downloadknop functionaliteit met dynamische datum
+    // Downloadknop
     downloadButton.addEventListener('click', () => {
         const canvases = document.querySelectorAll('.preview-canvas');
         if (canvases.length === 0) return;
@@ -630,136 +637,58 @@
         });
     });
 
-    const autoFillBtn = document.getElementById('auto-fill-btn');
-
-    // Hulpfunctie om de datum van het datumveld om te zetten naar DD-MM-YYYY
-    function getGekozenDatumString() {
-        let gekozenDatum = new Date(datumInput.value);
-        if (isNaN(gekozenDatum.getTime())) {
-            gekozenDatum = getEerstvolgendeZaterdagDate();
-        }
-
-        const dag = String(gekozenDatum.getDate()).padStart(2, '0');
-        const maand = String(gekozenDatum.getMonth() + 1).padStart(2, '0');
-        const jaar = gekozenDatum.getFullYear();
-
-        return `${dag}-${maand}-${jaar}`; // Verwacht formaat op de site (bijv. 12-09-2026)
-    }
-
-    // Automatisch invullen met Multi-Proxy Fallback
+    // AUTOMATISCH INVULLEN VIA SPORTLINK API
     autoFillBtn.addEventListener('click', async () => {
         const origineleTekst = autoFillBtn.innerText;
         autoFillBtn.innerText = 'Laden...';
         autoFillBtn.disabled = true;
 
-        const teZoekenDatum = getGekozenDatumString();
-        const targetUrl = 'https://gemini-korfbal.nl/competitie/';
-
-        // Lijst met betrouwbare CORS proxies (probeert de volgende als de eerste faalt)
-        const proxies = [
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`
-        ];
-
-        console.log("--- START AUTOMATISCH INVULLEN ---");
-        console.log(`[DEBUG] Zoekdatum ingesteld op: "${teZoekenDatum}"`);
-
-        let htmlText = null;
-
-        for (const proxyUrl of proxies) {
-            try {
-                console.log(`[DEBUG] Poging via proxy: ${proxyUrl}`);
-                
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 sec timeout per proxy
-
-                const response = await fetch(proxyUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) continue;
-
-                if (proxyUrl.includes('allorigins')) {
-                    const data = await response.json();
-                    htmlText = data.contents;
-                } else {
-                    htmlText = await response.text();
-                }
-
-                if (htmlText && htmlText.length > 500) {
-                    console.log(`[DEBUG] Succesvol HTML opgehaald via: ${proxyUrl}`);
-                    break; // Gelukt, stop de loop
-                }
-            } catch (err) {
-                console.warn(`[DEBUG] Proxy mislukt (${proxyUrl}):`, err.message);
-            }
-        }
-
-        if (!htmlText) {
-            alert('Kon de gegevens van gemini-korfbal.nl niet ophalen. Alle proxies reageerden niet.');
-            autoFillBtn.innerText = origineleTekst;
-            autoFillBtn.disabled = false;
-            return;
-        }
+        const gekozenDatumVal = datumInput.value; // Formaat YYYY-MM-DD
+        const apiUrl = `https://data.sportlink.com/programma?client_id=${SPORTLINK_CLIENT_ID}&aantaldagen=14`;
 
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, 'text/html');
-            const rows = doc.querySelectorAll('tr');
-
-            console.log(`[DEBUG] Aantal <tr> elementen gevonden: ${rows.length}`);
-
-            const gevondenWedstrijden = [];
-            const gevondenDatumsInTabel = new Set();
-
-            rows.forEach((row, index) => {
-                if (index === 0) return;
-
-                const cells = row.querySelectorAll('td');
-                if (cells.length > 3) {
-                    const dateStr = cells[0].textContent.trim();
-                    gevondenDatumsInTabel.add(dateStr);
-
-                    // Vergelijk datum (strip eventuele voorloop-nullen voor de zekerheid)
-                    if (normalizeDatum(dateStr) === normalizeDatum(teZoekenDatum)) {
-                        gevondenWedstrijden.push({
-                            thuis: cells[2].textContent.trim(),
-                            gast: cells[3].textContent.trim(),
-                            tijd: cells[1].textContent.trim()
-                        });
-                    }
-                }
-            });
-
-            console.log(`[DEBUG] Unieke datums op site:`, Array.from(gevondenDatumsInTabel));
-
-            if (gevondenWedstrijden.length === 0) {
-                alert(`Geen wedstrijden gevonden voor ${teZoekenDatum}.\n\nBekijk F12 console voor datums op de site.`);
-            } else {
-                vulFormulierIn(gevondenWedstrijden);
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP fout: ${response.status}`);
             }
 
+            const data = await response.json();
+
+            // Filter wedstrijden op de geselecteerde datum
+            const gefilterdeWedstrijden = data.filter(item => {
+                if (!item.wedstrijddatum) return false;
+                const itemDatum = item.wedstrijddatum.split('T')[0]; // Haal "YYYY-MM-DD" uit ISO-string
+                return itemDatum === gekozenDatumVal;
+            });
+
+            if (gefilterdeWedstrijden.length === 0) {
+                alert(`Geen wedstrijden gevonden op ${gekozenDatumVal} via Sportlink.`);
+                return;
+            }
+
+            // Mappen naar de verwachte structuur
+            const wedstrijdenVoorFormulier = gefilterdeWedstrijden.map(item => ({
+                thuis: item.thuisteam || '',
+                gast: item.uitteam || '',
+                tijd: item.aanvangstijd || ''
+            }));
+
+            vulFormulierIn(wedstrijdenVoorFormulier);
+
         } catch (error) {
-            console.error('[DEBUG ERROR]', error);
-            alert(`Fout bij verwerken data: ${error.message}`);
+            console.error('Fout bij ophalen Sportlink data:', error);
+            alert(`Er ging iets mis bij het ophalen van de gegevens: ${error.message}`);
         } finally {
             autoFillBtn.innerText = origineleTekst;
             autoFillBtn.disabled = false;
         }
     });
 
-    // Hulpfunctie om datumnotaties te matchen (bijv. 06-09-2026 en 6-9-2026)
-    function normalizeDatum(str) {
-        return str.replace(/^0+/, '').replace(/-0+/g, '-').replace(/\//g, '-');
-    }
-
     // Functie om de opgehaalde data in de HTML-velden te plaatsen
     function vulFormulierIn(wedstrijden) {
-        // Maak het huidige formulier leeg
         container.innerHTML = '';
 
         wedstrijden.forEach((w) => {
-            // Splits clubnaam en optionele teamaanduiding (bijv. "Gemini 1" of "Refleks J1")
             const thuisSplits = splitsClubEnTeam(w.thuis);
             const gastSplits = splitsClubEnTeam(w.gast);
 
@@ -797,16 +726,14 @@
             container.appendChild(matchCard);
         });
 
-        // Ververs direct de canvas previews
         updatePreview();
     }
 
-    // Hulpfunctie om team-toevoegingen (zoals 1, 2, A1, J1) uit de clubnaam te scheiden
+    // Hulpfunctie om team-toevoegingen uit de clubnaam te scheiden
     function splitsClubEnTeam(volledigeNaam) {
         const onderdelen = volledigeNaam.trim().split(' ');
         if (onderdelen.length > 1) {
             const laatsteDeel = onderdelen[onderdelen.length - 1];
-            // Controleer of het laatste deel een team-aanduiding is (bijv. 1, 2, A1, B2)
             if (/^(\d+|[A-Z]\d+)$/i.test(laatsteDeel)) {
                 return {
                     club: onderdelen.slice(0, -1).join(' '),
