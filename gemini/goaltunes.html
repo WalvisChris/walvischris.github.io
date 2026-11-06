@@ -36,7 +36,7 @@
             color: var(--text);
             font-family: 'Inter', system-ui, sans-serif;
             padding: calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
-            gap: 16px;
+            gap: 14px;
             -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -369,6 +369,38 @@
             font-size: 0.85rem;
             color: var(--muted);
             min-height: 1.2em;
+            margin-top: -6px;
+        }
+
+        /* ===== Aanval / Verdediging ===== */
+        .vak-row { display: flex; justify-content: center; }
+        .segmented {
+            display: inline-flex;
+            padding: 3px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+        .segmented button {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 7px 18px;
+            border-radius: 999px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .segmented button.active {
+            background: var(--accent);
+            color: #111;
+        }
+        /* Korte animatie als het vak wisselt */
+        .tune-grid.switching .tune-btn { animation: vakwissel 0.45s ease; }
+        @keyframes vakwissel {
+            0%   { transform: scale(1); opacity: 1; }
+            40%  { transform: scale(0.92); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* ===== Knoppen onderaan ===== */
@@ -560,7 +592,7 @@
 <body>
 
     <div class="topbar">
-        <a class="back-link" href="index.html">← Terug</a>
+        <a class="back-link" href="gemini-tools.html">← Terug</a>
         <div class="title"><span>Goal</span> Tunes</div>
         <div class="spacer"></div>
     </div>
@@ -582,9 +614,16 @@
         </div>
     </div>
 
+    <div class="vak-row">
+        <div class="segmented" role="tablist" aria-label="Vak">
+            <button type="button" data-profiel="aanval" class="active">Aanval</button>
+            <button type="button" data-profiel="verdediging">Verdediging</button>
+        </div>
+    </div>
+
     <div class="now-playing" id="now-playing"></div>
 
-    <!-- De vier knoppen worden gevuld vanuit KNOPPEN in het script -->
+    <!-- De vier knoppen worden gevuld vanuit PROFIELEN in het script -->
     <div class="tune-grid" id="tune-grid"></div>
 
     <div class="bottom-bar">
@@ -721,15 +760,15 @@
         }
     };
 
-    // De vier grote knoppen, in deze volgorde:
-    // links boven, rechts boven, links onder, rechts onder.
-    // Geef per knop de groep (heren/dames) en de naam zoals die hierboven staat.
-    const KNOPPEN = [
-        { groep: 'heren', naam: 'Nando' },
-        { groep: 'dames', naam: 'Eva' },
-        { groep: 'heren', naam: 'Robbin' },
-        { groep: 'dames', naam: 'Nanda' }
-    ];
+    // De vier grote knoppen: links boven, rechts boven, links onder, rechts onder.
+    // Links staan heren, rechts dames. Er zijn twee profielen (vakken) met elk vier spelers.
+    // Dit is de beginopstelling; wissels via vasthouden worden per profiel onthouden.
+    const KNOP_GROEPEN = ['heren', 'dames', 'heren', 'dames'];
+    const PROFIELEN = {
+        aanval:      ['Nando', 'Eva', 'Robbin', 'Nanda'],
+        verdediging: ['Rick', 'Madelief', 'Loek', 'Suzanne']
+    };
+    const PROFIEL_NAMEN = ['aanval', 'verdediging']; // de wedstrijd begint in de aanval
 
     // Zoekt een speler op naam in SPELERS (zodat foto en tune maar op één plek staan)
     function zoekSpeler(groep, naam) {
@@ -772,26 +811,43 @@
         knop.appendChild(label);
     }
 
-    // Grid opbouwen. Gewisselde spelers worden op de telefoon onthouden;
-    // KNOPPEN hierboven is de standaard als er nog niets gewisseld is.
+    // ===== GRID MET TWEE PROFIELEN =====
     const tuneGrid = document.getElementById('tune-grid');
     const gridKnoppen = [];
-    let opgeslagenKnoppen = null;
-    try { opgeslagenKnoppen = JSON.parse(localStorage.getItem('goaltunes-knoppen')); } catch (e) {}
 
     function bestaatSpeler(groep, naam) {
         return Object.values(SPELERS[groep] || {}).some(team => team.some(p => p.naam === naam));
     }
 
-    KNOPPEN.forEach((k, i) => {
-        const opgeslagen = Array.isArray(opgeslagenKnoppen) ? opgeslagenKnoppen[i] : null;
-        const naam = (opgeslagen && bestaatSpeler(k.groep, opgeslagen)) ? opgeslagen : k.naam;
+    // Opstelling per profiel laden (met de standaard uit PROFIELEN als basis)
+    const opstelling = { aanval: [...PROFIELEN.aanval], verdediging: [...PROFIELEN.verdediging] };
+    try {
+        const opgeslagen = JSON.parse(localStorage.getItem('goaltunes-knoppen'));
+        // Oude opslag (één lijst van vier) hoort bij de aanval
+        const bron = Array.isArray(opgeslagen) ? { aanval: opgeslagen } : (opgeslagen || {});
+        PROFIEL_NAMEN.forEach(prof => {
+            (bron[prof] || []).forEach((naam, i) => {
+                if (i < 4 && bestaatSpeler(KNOP_GROEPEN[i], naam)) opstelling[prof][i] = naam;
+            });
+        });
+    } catch (e) {}
+
+    function bewaarOpstelling() {
+        try { localStorage.setItem('goaltunes-knoppen', JSON.stringify(opstelling)); } catch (e) {}
+    }
+
+    // Handmatig wisselen draait het profiel om ten opzichte van de automatische wissel
+    let profielOmgedraaid = false;
+    try { profielOmgedraaid = localStorage.getItem('goaltunes-profiel-omgedraaid') === '1'; } catch (e) {}
+    let getoondProfiel = null;
+
+    KNOP_GROEPEN.forEach((groep, i) => {
         const btn = document.createElement('button');
-        btn.className = 'tune-btn ' + (k.groep === 'dames' ? 'girl' : 'boy');
-        btn.dataset.groep = k.groep;
+        btn.className = 'tune-btn ' + (groep === 'dames' ? 'girl' : 'boy');
+        btn.dataset.groep = groep;
+        btn.dataset.plek = i;
         tuneGrid.appendChild(btn);
         gridKnoppen.push(btn);
-        toonSpelerOpKnop(btn, zoekSpeler(k.groep, naam));
     });
 
     function toonSpelerOpKnop(btn, speler) {
@@ -802,12 +858,52 @@
         vulKaart(btn, speler);
     }
 
-    // Zet een speler op een knop en onthoud dat
+    // Na elke twee doelpunten (samen) wisselt het vak: 0-1 aanval, 2-3 verdediging, enz.
+    function huidigProfiel() {
+        const stand = telStand();
+        const wissels = Math.floor((stand.home + stand.away) / 2);
+        return PROFIEL_NAMEN[(wissels + (profielOmgedraaid ? 1 : 0)) % 2];
+    }
+
+    function toonProfiel(profiel, animeer) {
+        getoondProfiel = profiel;
+        gridKnoppen.forEach((btn, i) => {
+            toonSpelerOpKnop(btn, zoekSpeler(KNOP_GROEPEN[i], opstelling[profiel][i]));
+        });
+        document.querySelectorAll('.segmented button').forEach(b => {
+            const actief = b.dataset.profiel === profiel;
+            b.classList.toggle('active', actief);
+            b.setAttribute('aria-selected', actief);
+        });
+        if (animeer) {
+            tuneGrid.classList.remove('switching');
+            void tuneGrid.offsetWidth; // animatie opnieuw starten
+            tuneGrid.classList.add('switching');
+        }
+    }
+
+    // Wordt aangeroepen na elke wijziging in de score
+    function werkProfielBij() {
+        const profiel = huidigProfiel();
+        if (profiel !== getoondProfiel) toonProfiel(profiel, getoondProfiel !== null);
+    }
+
+    // Handmatig wisselen met de knoppen Aanval / Verdediging
+    document.querySelectorAll('.segmented button').forEach(b => {
+        b.addEventListener('click', () => {
+            if (b.dataset.profiel === getoondProfiel) return;
+            profielOmgedraaid = !profielOmgedraaid;
+            try { localStorage.setItem('goaltunes-profiel-omgedraaid', profielOmgedraaid ? '1' : '0'); } catch (e) {}
+            werkProfielBij();
+        });
+    });
+    tuneGrid.addEventListener('animationend', () => tuneGrid.classList.remove('switching'));
+
+    // Zet een speler op een knop in het huidige profiel en onthoud dat
     function wijsToe(btn, speler) {
         toonSpelerOpKnop(btn, speler);
-        try {
-            localStorage.setItem('goaltunes-knoppen', JSON.stringify(gridKnoppen.map(b => b._speler.naam)));
-        } catch (e) {}
+        opstelling[getoondProfiel][Number(btn.dataset.plek)] = speler.naam;
+        bewaarOpstelling();
     }
 
     // ===== AFSPELEN =====
@@ -1087,6 +1183,7 @@
         const stand = telStand();
         document.getElementById('score-home').textContent = stand.home;
         document.getElementById('score-away').textContent = stand.away;
+        werkProfielBij();
         if (matchOverlay.classList.contains('open')) renderOverzicht();
     }
 
@@ -1362,6 +1459,8 @@
         if (!confirm('Wedstrijd resetten? De score, de klok en het hele overzicht worden gewist.')) return;
         gebeurtenissen = [];
         bewaar();
+        profielOmgedraaid = false; // nieuwe wedstrijd begint in de aanval
+        try { localStorage.setItem('goaltunes-profiel-omgedraaid', '0'); } catch (e) {}
         toonScores();
         werkKlokBij();
     });
