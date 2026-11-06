@@ -3,369 +3,488 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korfbal Wedstrijdoverzicht Genereren</title>
+    <title>Wedstrijdoverzicht</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* Custom Fonts Inladen */
-        @font-face {
-            font-family: 'GeminiFont';
-            src: url('./assets/fonts/gemini.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'CairoFont';
-            src: url('./assets/fonts/cairo.ttf') format('truetype');
-        }
-        @font-face {
-            font-family: 'HeadlineFont';
-            src: url('./assets/fonts/headline.ttf') format('truetype');
-        }
+        /* Custom fonts voor de afbeeldingen */
+        @font-face { font-family: 'GeminiFont';   src: url('./assets/fonts/gemini.ttf')   format('truetype'); }
+        @font-face { font-family: 'CairoFont';    src: url('./assets/fonts/cairo.ttf')    format('truetype'); }
+        @font-face { font-family: 'HeadlineFont'; src: url('./assets/fonts/headline.ttf') format('truetype'); }
 
         :root {
-            --primary-color: #0066cc;
-            --success-color: #28a745;
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --match-card-bg: #2a2a2a;
-            --border-color: #3f3f46;
-            --text-color: #f4f4f5;
-            --text-muted: #a1a1aa;
-            --input-bg: #18181b;
+            --bg: #0d0d0f;
+            --surface: #17171b;
+            --surface-2: #1f1f24;
+            --input-bg: #111114;
+            --border: #2a2a30;
+            --text: #f2f2f2;
+            --muted: #8a8a93;
+            --accent: #fbdc2c;
+            --accent-dark: #e0c21a;
+            --danger: #e5484d;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #1c1a10 0%, var(--bg) 55%);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            margin: 0;
             gap: 20px;
+            padding: 0 16px 48px;
         }
 
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            padding: 24px;
+        /* Kop */
+        header {
             width: 100%;
             max-width: 600px;
-            box-sizing: border-box;
-            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 28px 0 4px;
         }
+        header h1 {
+            margin: 0;
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: 800;
+        }
+        header h1 span { color: var(--accent); }
+        .back-link {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--accent); }
 
-        /* Card Header met knop rechtsboven */
+        /* Kaarten */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            width: 100%;
+            max-width: 600px;
+        }
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
+        h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
 
-        .card-header h2 {
-            margin: 0;
+        /* Kalender */
+        .cal-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-
-        h2 {
-            margin-top: 0;
-            color: var(--text-color);
-            margin-bottom: 20px;
+        .cal-month {
+            min-width: 140px;
+            text-align: center;
+            font-weight: 600;
+            text-transform: capitalize;
         }
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-        /* Wedstrijdkaart / Blok */
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+        .cal-weekday {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            padding-bottom: 6px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            max-width: 52px;
+            width: 100%;
+            margin: 0 auto;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: none;
+            color: var(--text);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .cal-day:hover { background: var(--surface-2); }
+        .cal-day.today { color: var(--accent); }
+        .cal-day.has-match { border-color: var(--accent); }
+        .cal-day.selected,
+        .cal-day.selected:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #111;
+        }
+        .cal-empty { aspect-ratio: 1; }
+
+        .cal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: var(--muted);
+            flex-wrap: wrap;
+        }
+        .legend { display: flex; gap: 14px; align-items: center; }
+        .legend i {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: -1px;
+        }
+        .legend .l-match { border: 2px solid var(--accent); }
+        .legend .l-selected { background: var(--accent); }
+        #selected-label { color: var(--text); font-weight: 600; }
+
+        /* Wedstrijdblokken */
         .match-card {
-            border: 1px solid var(--border-color);
-            background-color: var(--match-card-bg);
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 16px;
             position: relative;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
-
-        .match-row {
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-        }
-
-        .input-group {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .input-group.team-group {
-            flex: 1; /* Team input is smaller */
-        }
-
-        .input-group.time-group {
-            flex: 1.5; /* Tijd input */
-        }
-
+        .match-row { display: flex; gap: 10px; align-items: flex-end; }
+        .input-group { flex: 3; display: flex; flex-direction: column; }
+        .input-group.team-group { flex: 1; }
+        .input-group.time-group { flex: 0 0 140px; }
         .input-group label {
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-            color: var(--text-muted);
-            font-weight: bold;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: var(--muted);
+            font-weight: 600;
         }
-
-        input[type="text"], input[type="time"], input[type="date"] {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 1rem;
-            width: 100%;
-            box-sizing: border-box;
+        input[type="text"], input[type="time"] {
             height: 42px;
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            color-scheme: dark; /* Zorgt voor donkere klok/tijdpicker */
+            width: 100%;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font: inherit;
+            color-scheme: dark;
+            transition: border-color 0.2s;
         }
+        input::placeholder { color: #5c5c66; }
+        input:focus { outline: none; border-color: var(--accent); }
 
-        input[type="text"]::placeholder {
-            color: #71717a;
-        }
-
-        input[type="text"]:focus, input[type="time"]:focus, input[type="date"]:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-
+        /* Knoppen */
         .btn {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 4px;
+            font: inherit;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: background-color 0.2s;
+            border-radius: 999px;
+            padding: 12px 18px;
+            transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
         }
-
-        .btn-auto {
-            background-color: #6f42c1;
-            color: white;
-            padding: 8px 18px;
-            font-size: 0.9rem;
-            border-radius: 25px; /* Sterk afgeronde hoeken */
+        .btn:disabled { opacity: 0.6; cursor: wait; }
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 2px solid var(--accent);
         }
-
-        .btn-auto:hover {
-            background-color: #593196;
+        .btn-outline:hover:not(:disabled) { background: var(--accent); color: #111; }
+        .btn-small { padding: 8px 16px; font-size: 0.9rem; }
+        .btn-full { width: 100%; }
+        .btn-primary {
+            background: var(--accent);
+            color: #111;
+            border: 2px solid var(--accent);
         }
-
-        .btn-add {
-            background-color: #6f42c1;
-            color: white;
-            width: 100%;
-            margin-top: 10px;
-            border-radius: 25px; /* Sterk afgeronde hoeken */
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(251, 220, 44, 0.25);
         }
-
-        .btn-add:hover {
-            background-color: #593196;
-        }
-
-        .btn-download {
-            background-color: var(--success-color);
-            color: white;
-            width: 100%;
-            margin-top: 15px;
-        }
-
-        .btn-download:hover {
-            background-color: #218838;
-        }
-
         .btn-remove {
             position: absolute;
             top: 12px;
             right: 12px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--input-bg);
+            color: var(--muted);
             cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 700;
+            transition: color 0.2s, border-color 0.2s;
         }
+        .btn-remove:hover { color: var(--danger); border-color: var(--danger); }
 
-        .btn-remove:hover {
-            background-color: #bd2130;
-        }
-
-        /* Container voor alle canvas previews naast elkaar */
-        .preview-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 1200px;
-        }
-
+        /* Preview */
+        .preview-card { max-width: 1200px; }
         #canvases-wrapper {
             display: flex;
-            flex-direction: row;
             flex-wrap: wrap;
             justify-content: center;
             gap: 20px;
-            width: 100%;
+            margin-bottom: 18px;
         }
-
-        .canvas-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 0 0 auto;
-        }
-
-        .canvas-card h3 {
-            margin: 0 0 10px 0;
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
-
+        .canvas-card { display: flex; flex-direction: column; align-items: center; }
+        .canvas-card h3 { margin: 0 0 10px; color: var(--muted); font-size: 1rem; }
         canvas {
             width: 280px;
             aspect-ratio: 9 / 16;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            background-color: #27272a;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #1f1f24;
+        }
+        .preview-card .btn-primary { display: block; width: 100%; max-width: 360px; margin: 0 auto; }
+
+        @media (max-width: 480px) {
+            .card { padding: 16px; }
+            .cal-month { min-width: 110px; font-size: 0.95rem; }
+            .input-group.time-group { flex: 1; }
         }
     </style>
 </head>
 <body>
 
-<!-- Bovenste Card: Wedstrijddatum -->
+<header>
+    <h1><span>Wedstrijd</span>overzicht</h1>
+    <a class="back-link" href="index.html">← Terug</a>
+</header>
+
+<!-- Kalender -->
 <div class="card">
-    <h2>Wedstrijddatum</h2>
-    <div class="input-group">
-        <label for="wedstrijd-datum">Wedstrijddatum</label>
-        <input type="date" id="wedstrijd-datum">
+    <div class="card-header">
+        <h2>Wedstrijddatum</h2>
+        <div class="cal-nav">
+            <button type="button" class="icon-btn" id="cal-prev" aria-label="Vorige maand">‹</button>
+            <div class="cal-month" id="cal-month"></div>
+            <button type="button" class="icon-btn" id="cal-next" aria-label="Volgende maand">›</button>
+        </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-footer">
+        <div class="legend">
+            <span><i class="l-match"></i>Wedstrijd</span>
+            <span><i class="l-selected"></i>Geselecteerd</span>
+        </div>
+        <span id="selected-label"></span>
     </div>
 </div>
 
+<!-- Wedstrijden -->
 <div class="card">
     <div class="card-header">
-        <h2>Wedstrijden Toevoegen</h2>
-        <button type="button" class="btn btn-auto" id="auto-fill-btn">Automatisch invullen</button>
+        <h2>Wedstrijden</h2>
+        <button type="button" class="btn btn-outline btn-small" id="auto-fill-btn">Automatisch invullen</button>
     </div>
-    
+
     <datalist id="club-list"></datalist>
 
     <form id="match-form" onsubmit="return false;">
-        <div id="matches-container">
-            <!-- Eerste wedstrijdblok -->
-            <div class="match-card">
-                <!-- Regel 1: Thuis -->
-                <div class="match-row">
-                    <div class="input-group">
-                        <label>Thuis club</label>
-                        <input type="text" list="club-list" class="thuis-input" placeholder="Club/stad">
-                    </div>
-                    <div class="input-group team-group">
-                        <label>Team</label>
-                        <input type="text" class="thuis-team-input" placeholder="J1">
-                    </div>
-                </div>
-
-                <!-- Regel 2: Gast -->
-                <div class="match-row">
-                    <div class="input-group">
-                        <label>Gast club</label>
-                        <input type="text" list="club-list" class="gast-input" placeholder="Club/stad">
-                    </div>
-                    <div class="input-group team-group">
-                        <label>Team</label>
-                        <input type="text" class="gast-team-input" placeholder="J1">
-                    </div>
-                </div>
-
-                <!-- Regel 3: Tijd -->
-                <div class="match-row">
-                    <div class="input-group time-group">
-                        <label>Tijd</label>
-                        <input type="time" class="tijd-input">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <button type="button" class="btn btn-add" id="add-match-btn">+ Wedstrijd toevoegen</button>
+        <div id="matches-container"></div>
+        <button type="button" class="btn btn-outline btn-full" id="add-match-btn">+ Wedstrijd toevoegen</button>
     </form>
 </div>
 
-<div class="card preview-container">
-    <h2>Live Preview (9:16)</h2>
+<!-- Preview -->
+<div class="card preview-card">
+    <div class="card-header"><h2>Live preview (9:16)</h2></div>
     <div id="canvases-wrapper"></div>
-    <button type="button" class="btn btn-download" id="download-btn">Alle Afbeeldingen Downloaden</button>
+    <button type="button" class="btn btn-primary" id="download-btn">Alle afbeeldingen downloaden</button>
 </div>
 
-<!-- 1. Laad het clubs.js bestand -->
 <script src="clubs.js"></script>
 
-<!-- 2. Live Paginalogica -->
 <script>
+    // ===== CONFIGURATIE =====
+    const SPORTLINK_CLIENT_ID = 'NzuwK8DLwE';
+    const SPORTLINK_BASE = 'https://data.sportlink.com';
+    const DAGEN_VOORUIT = 120; // hoeveel dagen programma ophalen
+    const DAGEN_TERUG = 60;    // hoeveel dagen uitslagen ophalen (voor eerdere dagen in de maand)
+
     const container = document.getElementById('matches-container');
     const addButton = document.getElementById('add-match-btn');
     const downloadButton = document.getElementById('download-btn');
     const datalist = document.getElementById('club-list');
     const canvasesWrapper = document.getElementById('canvases-wrapper');
-    const datumInput = document.getElementById('wedstrijd-datum');
     const autoFillBtn = document.getElementById('auto-fill-btn');
+    const calGrid = document.getElementById('cal-grid');
+    const calMonth = document.getElementById('cal-month');
+    const selectedLabel = document.getElementById('selected-label');
 
-    // CONFIGURATIE
-    const SPORTLINK_CLIENT_ID = 'NzuwK8DLwE'; // Directe Sportlink API key
-
-    // Hulpfunctie om de eerstvolgende zaterdag te berekenen als Date object
-    function getEerstvolgendeZaterdagDate() {
-        const vandaag = new Date();
-        const dagVanDeWeek = vandaag.getDay(); // 0 = zondag, 6 = zaterdag
-        const dagenTotZaterdag = (6 - dagVanDeWeek + 7) % 7;
-        
-        const zaterdag = new Date(vandaag);
-        zaterdag.setDate(vandaag.getDate() + dagenTotZaterdag);
-        return zaterdag;
+    // ===== DATUM HULPFUNCTIES =====
+    function toKey(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function fromKey(key) {
+        const [j, m, d] = key.split('-').map(Number);
+        return new Date(j, m - 1, d);
+    }
+    function getEerstvolgendeZaterdag() {
+        const v = new Date();
+        const z = new Date(v.getFullYear(), v.getMonth(), v.getDate());
+        z.setDate(z.getDate() + ((6 - z.getDay() + 7) % 7));
+        return z;
     }
 
-    // Stel standaard de datumknop in op de eerstvolgende zaterdag (YYYY-MM-DD)
-    const zaterdagStandaard = getEerstvolgendeZaterdagDate();
-    const jjjj = zaterdagStandaard.getFullYear();
-    const mm = String(zaterdagStandaard.getMonth() + 1).padStart(2, '0');
-    const dd = String(zaterdagStandaard.getDate()).padStart(2, '0');
-    datumInput.value = `${jjjj}-${mm}-${dd}`;
+    // ===== STATUS =====
+    let geselecteerdeDatum = toKey(getEerstvolgendeZaterdag());
+    let zichtbareMaand = fromKey(geselecteerdeDatum);
+    zichtbareMaand.setDate(1);
+    let alleSportlinkWedstrijden = [];   // gecachte API-data
+    let wedstrijdDagen = new Set();      // 'YYYY-MM-DD' met minstens één wedstrijd
+    let dataGeladen = false;
 
-    // Luister naar datumwijzigingen voor live update
-    datumInput.addEventListener('change', updatePreview);
+    // ===== KALENDER =====
+    const MAANDEN_VOL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+    const WEEKDAGEN = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
 
-    // Laad achtergrondafbeelding vooraf in
+    function renderKalender() {
+        const jaar = zichtbareMaand.getFullYear();
+        const maand = zichtbareMaand.getMonth();
+        calMonth.textContent = `${MAANDEN_VOL[maand]} ${jaar}`;
+        calGrid.innerHTML = '';
+
+        WEEKDAGEN.forEach(w => {
+            const el = document.createElement('div');
+            el.className = 'cal-weekday';
+            el.textContent = w;
+            calGrid.appendChild(el);
+        });
+
+        const eersteDag = new Date(jaar, maand, 1);
+        const offset = (eersteDag.getDay() + 6) % 7; // maandag = 0
+        const aantalDagen = new Date(jaar, maand + 1, 0).getDate();
+        const vandaagKey = toKey(new Date());
+
+        for (let i = 0; i < offset; i++) {
+            const leeg = document.createElement('div');
+            leeg.className = 'cal-empty';
+            calGrid.appendChild(leeg);
+        }
+
+        for (let dag = 1; dag <= aantalDagen; dag++) {
+            const key = toKey(new Date(jaar, maand, dag));
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cal-day';
+            btn.textContent = dag;
+            if (key === vandaagKey) btn.classList.add('today');
+            if (wedstrijdDagen.has(key)) btn.classList.add('has-match');
+            if (key === geselecteerdeDatum) btn.classList.add('selected');
+            btn.addEventListener('click', () => selecteerDatum(key));
+            calGrid.appendChild(btn);
+        }
+
+        selectedLabel.textContent = getGekozenDatumTekst().toLowerCase().replace(/^\w/, c => c.toUpperCase());
+    }
+
+    function selecteerDatum(key) {
+        geselecteerdeDatum = key;
+        renderKalender();
+        updatePreview();
+    }
+
+    document.getElementById('cal-prev').addEventListener('click', () => {
+        zichtbareMaand = new Date(zichtbareMaand.getFullYear(), zichtbareMaand.getMonth() - 1, 1);
+        renderKalender();
+    });
+    document.getElementById('cal-next').addEventListener('click', () => {
+        zichtbareMaand = new Date(zichtbareMaand.getFullYear(), zichtbareMaand.getMonth() + 1, 1);
+        renderKalender();
+    });
+
+    // ===== SPORTLINK DATA =====
+    async function haalSportlinkOp(endpoint, aantalDagen) {
+        const url = `${SPORTLINK_BASE}/${endpoint}?client_id=${SPORTLINK_CLIENT_ID}&aantaldagen=${aantalDagen}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP fout: ${res.status}`);
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+    }
+
+    async function laadWedstrijdDagen() {
+        const [programma, uitslagen] = await Promise.allSettled([
+            haalSportlinkOp('programma', DAGEN_VOORUIT),
+            haalSportlinkOp('uitslagen', DAGEN_TERUG)
+        ]);
+
+        if (programma.status === 'rejected') {
+            console.error('Programma ophalen mislukt:', programma.reason);
+        }
+
+        alleSportlinkWedstrijden = [
+            ...(programma.status === 'fulfilled' ? programma.value : []),
+            ...(uitslagen.status === 'fulfilled' ? uitslagen.value : [])
+        ];
+
+        wedstrijdDagen = new Set(
+            alleSportlinkWedstrijden
+                .filter(w => w.wedstrijddatum)
+                .map(w => w.wedstrijddatum.split('T')[0])
+        );
+        dataGeladen = programma.status === 'fulfilled';
+
+        // Selecteer de eerstvolgende wedstrijddag (vanaf vandaag), als die er is
+        const vandaagKey = toKey(new Date());
+        const volgende = [...wedstrijdDagen].filter(k => k >= vandaagKey).sort()[0];
+        if (volgende) {
+            geselecteerdeDatum = volgende;
+            const d = fromKey(volgende);
+            zichtbareMaand = new Date(d.getFullYear(), d.getMonth(), 1);
+            updatePreview();
+        }
+        renderKalender();
+    }
+
+    // ===== ACHTERGROND & FONTS =====
     const bgImg = new Image();
     bgImg.src = './assets/hemelvaart_9_16.jpg';
     let bgLoaded = false;
-
-    bgImg.onload = () => {
-        bgLoaded = true;
-        updatePreview();
-    };
-
+    bgImg.onload = () => { bgLoaded = true; updatePreview(); };
     bgImg.onerror = () => {
-        bgLoaded = false;
         console.warn("Kon './assets/hemelvaart_9_16.jpg' niet laden. Fallback achtergrond gebruikt.");
         updatePreview();
     };
+    document.fonts.ready.then(updatePreview);
 
-    // Wacht tot alle custom fonts geladen zijn voor een correcte eerste render
-    document.fonts.ready.then(() => {
-        updatePreview();
-    });
-
-    // Laad clubdata in datalist
+    // ===== CLUBS =====
     if (typeof clubsData !== 'undefined') {
         clubsData.forEach(club => {
             const option = document.createElement('option');
@@ -374,234 +493,246 @@
         });
     }
 
-    // Luister naar input events op het hele formulier (Live Updates)
-    container.addEventListener('input', updatePreview);
+    function getSchoneNaam(waarde) {
+        if (!waarde) return '';
+        if (typeof clubsData !== 'undefined') {
+            const club = clubsData.find(c =>
+                `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
+                c.naam.toLowerCase() === waarde.toLowerCase()
+            );
+            if (club) return club.naam;
+        }
+        return waarde.replace(/\s*\([^)]*\)$/, '').trim();
+    }
 
-    // Nieuwe wedstrijd toevoegen
-    addButton.addEventListener('click', () => {
-        const matchCard = document.createElement('div');
-        matchCard.className = 'match-card';
-        matchCard.innerHTML = `
-            <button type="button" class="btn-remove" onclick="removeMatch(this)" title="Verwijder wedstrijd">✕</button>
+    function getStadVanInput(waarde) {
+        if (!waarde || typeof clubsData === 'undefined') return '';
+        const schoon = getSchoneNaam(waarde).toLowerCase();
+        const club = clubsData.find(c =>
+            `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
+            c.naam.toLowerCase() === waarde.toLowerCase() ||
+            c.naam.toLowerCase() === schoon
+        );
+        return club ? club.stad : '';
+    }
+
+    // ===== WEDSTRIJDBLOKKEN =====
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function maakMatchCard(w = {}, verwijderbaar = true) {
+        const card = document.createElement('div');
+        card.className = 'match-card';
+        card.innerHTML = `
+            ${verwijderbaar ? '<button type="button" class="btn-remove" title="Verwijder wedstrijd">✕</button>' : ''}
             <div class="match-row">
                 <div class="input-group">
                     <label>Thuis club</label>
-                    <input type="text" list="club-list" class="thuis-input" placeholder="Club/stad">
+                    <input type="text" list="club-list" class="thuis-input" value="${esc(w.thuisClub)}" placeholder="Club/stad">
                 </div>
                 <div class="input-group team-group">
                     <label>Team</label>
-                    <input type="text" class="thuis-team-input" placeholder="J1">
+                    <input type="text" class="thuis-team-input" value="${esc(w.thuisTeam)}" placeholder="J1">
                 </div>
             </div>
             <div class="match-row">
                 <div class="input-group">
                     <label>Gast club</label>
-                    <input type="text" list="club-list" class="gast-input" placeholder="Club/stad">
+                    <input type="text" list="club-list" class="gast-input" value="${esc(w.gastClub)}" placeholder="Club/stad">
                 </div>
                 <div class="input-group team-group">
                     <label>Team</label>
-                    <input type="text" class="gast-team-input" placeholder="J1">
+                    <input type="text" class="gast-team-input" value="${esc(w.gastTeam)}" placeholder="J1">
                 </div>
             </div>
             <div class="match-row">
                 <div class="input-group time-group">
                     <label>Tijd</label>
-                    <input type="time" class="tijd-input">
+                    <input type="time" class="tijd-input" value="${esc(w.tijd)}">
                 </div>
             </div>
         `;
-        container.appendChild(matchCard);
+        const rm = card.querySelector('.btn-remove');
+        if (rm) rm.addEventListener('click', () => { card.remove(); updatePreview(); });
+        return card;
+    }
+
+    container.appendChild(maakMatchCard({}, false));
+    container.addEventListener('input', updatePreview);
+    addButton.addEventListener('click', () => {
+        container.appendChild(maakMatchCard());
         updatePreview();
     });
 
-    function removeMatch(button) {
-        button.closest('.match-card').remove();
+    function splitsClubEnTeam(volledigeNaam) {
+        const onderdelen = (volledigeNaam || '').trim().split(' ');
+        if (onderdelen.length > 1) {
+            const laatste = onderdelen[onderdelen.length - 1];
+            if (/^(\d+|[A-Z]\d+)$/i.test(laatste)) {
+                return { club: onderdelen.slice(0, -1).join(' '), team: laatste };
+            }
+        }
+        return { club: volledigeNaam || '', team: '' };
+    }
+
+    function vulFormulierIn(wedstrijden) {
+        container.innerHTML = '';
+        wedstrijden.forEach((w, i) => {
+            const t = splitsClubEnTeam(w.thuis);
+            const g = splitsClubEnTeam(w.gast);
+            container.appendChild(maakMatchCard({
+                thuisClub: t.club, thuisTeam: t.team,
+                gastClub: g.club, gastTeam: g.team,
+                tijd: w.tijd
+            }, i > 0));
+        });
         updatePreview();
     }
 
-    // Hulpfunctie om de stad te achterhalen op basis van clubsData
-    function getStadVanInput(waarde) {
-        if (!waarde) return "";
+    // ===== AUTOMATISCH INVULLEN =====
+    autoFillBtn.addEventListener('click', async () => {
+        const origineel = autoFillBtn.innerText;
+        autoFillBtn.innerText = 'Laden...';
+        autoFillBtn.disabled = true;
+        try {
+            if (!dataGeladen) await laadWedstrijdDagen();
+            if (!dataGeladen) throw new Error('Sportlink is niet bereikbaar');
 
-        if (typeof clubsData !== 'undefined') {
-            const club = clubsData.find(c => 
-                `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
-                c.naam.toLowerCase() === waarde.toLowerCase() ||
-                c.naam.toLowerCase() === getSchoneNaam(waarde).toLowerCase()
+            const opDatum = alleSportlinkWedstrijden.filter(item =>
+                item.wedstrijddatum && item.wedstrijddatum.split('T')[0] === geselecteerdeDatum
             );
-            
-            if (club) return club.stad;
+
+            if (opDatum.length === 0) {
+                alert(`Geen wedstrijden gevonden op ${getGekozenDatumTekst().toLowerCase()}.`);
+                return;
+            }
+
+            opDatum.sort((a, b) => (a.aanvangstijd || '').localeCompare(b.aanvangstijd || ''));
+            vulFormulierIn(opDatum.map(item => ({
+                thuis: item.thuisteam || '',
+                gast: item.uitteam || '',
+                tijd: item.aanvangstijd || ''
+            })));
+        } catch (err) {
+            console.error('Fout bij ophalen Sportlink data:', err);
+            alert(`Er ging iets mis bij het ophalen van de gegevens: ${err.message}`);
+        } finally {
+            autoFillBtn.innerText = origineel;
+            autoFillBtn.disabled = false;
         }
+    });
 
-        return "";
-    }
-
-    // Hulpfunctie om clubnaam op te schone
-    function getSchoneNaam(waarde) {
-        if (!waarde) return "";
-
-        if (typeof clubsData !== 'undefined') {
-            const club = clubsData.find(c => 
-                `${c.naam} (${c.stad})`.toLowerCase() === waarde.toLowerCase() ||
-                c.naam.toLowerCase() === waarde.toLowerCase()
-            );
-            if (club) return club.naam; 
-        }
-
-        return waarde.replace(/\s*\([^)]*\)$/, '').trim();
-    }
-
-    // Hulpfunctie om de tekst voor de gekozen datum op te bouwen
+    // ===== PREVIEW =====
     function getGekozenDatumTekst() {
-        let gekozenDatum = new Date(datumInput.value);
-        if (isNaN(gekozenDatum.getTime())) {
-            gekozenDatum = getEerstvolgendeZaterdagDate();
-        }
-
-        const dagen = ['ZONDAG', 'MAANDAG', 'DINSDAG', 'WOENSDAG', 'DONDERDAG', 'VRIJDAG', 'ZATERDAG'];
-        const maanden = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEC'];
-
-        const dagNaam = dagen[gekozenDatum.getDay()];
-        const dagNummer = gekozenDatum.getDate();
-        const maandNaam = maanden[gekozenDatum.getMonth()];
-
-        return `${dagNaam} ${dagNummer} ${maandNaam}`;
+        const d = fromKey(geselecteerdeDatum);
+        const dagen = ['ZONDAG','MAANDAG','DINSDAG','WOENSDAG','DONDERDAG','VRIJDAG','ZATERDAG'];
+        const maanden = ['JAN','FEB','MAR','APR','MEI','JUN','JUL','AUG','SEP','OKT','NOV','DEC'];
+        return `${dagen[d.getDay()]} ${d.getDate()} ${maanden[d.getMonth()]}`;
     }
 
-    // Functie voor LIVE preview updating
     function updatePreview() {
-        const matchCards = document.querySelectorAll('.match-card');
         const alleWedstrijden = [];
-
-        matchCards.forEach((card) => {
+        document.querySelectorAll('.match-card').forEach(card => {
             const thuisVal = card.querySelector('.thuis-input').value;
-            const thuisTeamVal = card.querySelector('.thuis-team-input').value.trim();
+            const thuisTeam = card.querySelector('.thuis-team-input').value.trim();
             const gastVal = card.querySelector('.gast-input').value;
-            const gastTeamVal = card.querySelector('.gast-team-input').value.trim();
+            const gastTeam = card.querySelector('.gast-team-input').value.trim();
             const tijdVal = card.querySelector('.tijd-input').value;
 
             if (thuisVal || gastVal || tijdVal) {
-                let thuisNaam = getSchoneNaam(thuisVal);
-                let gastNaam = getSchoneNaam(gastVal);
-
-                if (thuisNaam && thuisTeamVal) thuisNaam += ` ${thuisTeamVal}`;
-                if (gastNaam && gastTeamVal) gastNaam += ` ${gastTeamVal}`;
-
-                const stad = getStadVanInput(thuisVal) || getStadVanInput(gastVal);
-
-                alleWedstrijden.push({ 
-                    thuis: thuisNaam, 
-                    gast: gastNaam, 
-                    stad: stad,
-                    tijd: tijdVal 
+                let thuis = getSchoneNaam(thuisVal);
+                let gast = getSchoneNaam(gastVal);
+                if (thuis && thuisTeam) thuis += ` ${thuisTeam}`;
+                if (gast && gastTeam) gast += ` ${gastTeam}`;
+                alleWedstrijden.push({
+                    thuis, gast,
+                    stad: getStadVanInput(thuisVal) || getStadVanInput(gastVal),
+                    tijd: tijdVal
                 });
             }
         });
 
         const maxPerPagina = 3;
-        const paginaGroepen = [];
+        const paginas = [];
         for (let i = 0; i < alleWedstrijden.length; i += maxPerPagina) {
-            paginaGroepen.push(alleWedstrijden.slice(i, i + maxPerPagina));
+            paginas.push(alleWedstrijden.slice(i, i + maxPerPagina));
         }
-
-        if (paginaGroepen.length === 0) {
-            paginaGroepen.push([]);
-        }
+        if (paginas.length === 0) paginas.push([]);
 
         canvasesWrapper.innerHTML = '';
-
-        paginaGroepen.forEach((wedstrijdenPagina, pageIndex) => {
-            const canvasCard = document.createElement('div');
-            canvasCard.className = 'canvas-card';
-
-            if (paginaGroepen.length > 1) {
-                const title = document.createElement('h3');
-                title.innerText = `Post ${pageIndex + 1}`;
-                canvasCard.appendChild(title);
+        paginas.forEach((pagina, idx) => {
+            const card = document.createElement('div');
+            card.className = 'canvas-card';
+            if (paginas.length > 1) {
+                const h = document.createElement('h3');
+                h.innerText = `Post ${idx + 1}`;
+                card.appendChild(h);
             }
-
             const canvas = document.createElement('canvas');
             canvas.width = 1080;
             canvas.height = 1920;
             canvas.className = 'preview-canvas';
-
-            canvasCard.appendChild(canvas);
-            canvasesWrapper.appendChild(canvasCard);
+            card.appendChild(canvas);
+            canvasesWrapper.appendChild(card);
 
             const ctx = canvas.getContext('2d');
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (bgLoaded) {
                 ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
             } else {
                 ctx.fillStyle = '#1e293b';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-
-            tekenWedstrijden(ctx, wedstrijdenPagina);
+            tekenWedstrijden(ctx, pagina);
         });
     }
 
-    // HULPFUNCTIE: Schaalt de tekst automatisch als hij breder is dan maxBreedte
     function tekenAangepasteTekst(ctx, tekst, x, y, maxBreedte, basisGrootte, fontFamilie, kleur) {
         let grootte = basisGrootte;
         ctx.font = `${grootte}px ${fontFamilie}`;
-        
-        // Zorg ervoor dat de tekst niet breder wordt dan maxBreedte (minimale grootte = 30px)
         while (ctx.measureText(tekst).width > maxBreedte && grootte > 30) {
             grootte -= 2;
             ctx.font = `${grootte}px ${fontFamilie}`;
         }
-        
         ctx.fillStyle = kleur;
         ctx.fillText(tekst, x, y);
     }
 
+    function isGemini(naam) {
+        return (naam || '').toUpperCase().includes('GEMINI');
+    }
+
     function tekenWedstrijden(ctx, wedstrijden) {
         const geminiGeel = '#fbdc2c';
-        const canvasMiddenX = ctx.canvas.width / 2;
+        const midden = ctx.canvas.width / 2;
 
         ctx.textAlign = 'center';
-
         ctx.font = '135px HeadlineFont, Arial';
         ctx.fillStyle = geminiGeel;
-        ctx.fillText('Wedstrijden', canvasMiddenX, 210);
+        ctx.fillText('Wedstrijden', midden, 210);
 
-        const datumTekst = getGekozenDatumTekst();
         ctx.font = '42px CairoFont, Arial';
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillText(datumTekst, canvasMiddenX, 280);
+        ctx.fillText(getGekozenDatumTekst(), midden, 280);
 
         if (wedstrijden.length === 0) return;
 
         ctx.textAlign = 'left';
-
-        const startX = 100;
-        const startY = 480;
-        const blokHoogte = 440;
-        const maxTekstBreedte = 880; // 1080px canvas - 2x 100px randmarge
+        const startX = 100, startY = 480, blokHoogte = 440, maxBreedte = 880;
 
         wedstrijden.forEach((w, idx) => {
-            const y = startY + (idx * blokHoogte);
+            const y = startY + idx * blokHoogte;
 
-            // Thuis team (automatisch geschaald)
-            const thuisIsGemini = isGemini(w.thuis);
-            const thuisFont = thuisIsGemini ? 'GeminiFont, Arial' : 'CairoFont, Arial';
-            const thuisKleur = thuisIsGemini ? geminiGeel : '#ffffff';
-            tekenAangepasteTekst(ctx, w.thuis, startX, y, maxTekstBreedte, 80, thuisFont, thuisKleur);
+            const tG = isGemini(w.thuis);
+            tekenAangepasteTekst(ctx, w.thuis, startX, y, maxBreedte, 80,
+                tG ? 'GeminiFont, Arial' : 'CairoFont, Arial', tG ? geminiGeel : '#ffffff');
 
-            // Gast team (automatisch geschaald)
-            const gastIsGemini = isGemini(w.gast);
-            const gastFont = gastIsGemini ? 'GeminiFont, Arial' : 'CairoFont, Arial';
-            const gastKleur = gastIsGemini ? geminiGeel : '#ffffff';
-            tekenAangepasteTekst(ctx, w.gast, startX, y + 95, maxTekstBreedte, 80, gastFont, gastKleur);
+            const gG = isGemini(w.gast);
+            tekenAangepasteTekst(ctx, w.gast, startX, y + 95, maxBreedte, 80,
+                gG ? 'GeminiFont, Arial' : 'CairoFont, Arial', gG ? geminiGeel : '#ffffff');
 
-            // Tijd en stad
-            const details = [];
-            if (w.tijd) details.push(w.tijd);
-            if (w.stad) details.push(w.stad);
-
-            if (details.length > 0) {
+            const details = [w.tijd, w.stad].filter(Boolean);
+            if (details.length) {
                 ctx.font = '42px CairoFont, Arial';
                 ctx.fillStyle = '#e2e8f0';
                 ctx.fillText(details.join(' - '), startX, y + 165);
@@ -609,143 +740,27 @@
         });
     }
 
-    function isGemini(naam) {
-        return naam.toUpperCase().includes('GEMINI');
-    }
-
-    // Downloadknop
+    // ===== DOWNLOAD =====
     downloadButton.addEventListener('click', () => {
         const canvases = document.querySelectorAll('.preview-canvas');
-        if (canvases.length === 0) return;
-
-        const vandaag = new Date();
-        const dag = String(vandaag.getDate()).padStart(2, '0');
-        const maand = String(vandaag.getMonth() + 1).padStart(2, '0');
-        const jaar = vandaag.getFullYear();
-        const datumString = `${dag}.${maand}.${jaar}`;
-
-        canvases.forEach((canvas, index) => {
+        const v = new Date();
+        const datumString = `${String(v.getDate()).padStart(2, '0')}.${String(v.getMonth() + 1).padStart(2, '0')}.${v.getFullYear()}`;
+        canvases.forEach((canvas, i) => {
             setTimeout(() => {
                 const link = document.createElement('a');
-                link.download = `gemini_wedstrijden_${datumString}_${index + 1}.jpg`;
+                link.download = `gemini_wedstrijden_${datumString}_${i + 1}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
-                
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
-            }, index * 300);
+                link.remove();
+            }, i * 300);
         });
     });
 
-    // AUTOMATISCH INVULLEN VIA SPORTLINK API
-    autoFillBtn.addEventListener('click', async () => {
-        const origineleTekst = autoFillBtn.innerText;
-        autoFillBtn.innerText = 'Laden...';
-        autoFillBtn.disabled = true;
-
-        const gekozenDatumVal = datumInput.value; // Formaat YYYY-MM-DD
-        const apiUrl = `https://data.sportlink.com/programma?client_id=${SPORTLINK_CLIENT_ID}&aantaldagen=14`;
-
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP fout: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Filter wedstrijden op de geselecteerde datum
-            const gefilterdeWedstrijden = data.filter(item => {
-                if (!item.wedstrijddatum) return false;
-                const itemDatum = item.wedstrijddatum.split('T')[0]; // Haal "YYYY-MM-DD" uit ISO-string
-                return itemDatum === gekozenDatumVal;
-            });
-
-            if (gefilterdeWedstrijden.length === 0) {
-                alert(`Geen wedstrijden gevonden op ${gekozenDatumVal} via Sportlink.`);
-                return;
-            }
-
-            // Mappen naar de verwachte structuur
-            const wedstrijdenVoorFormulier = gefilterdeWedstrijden.map(item => ({
-                thuis: item.thuisteam || '',
-                gast: item.uitteam || '',
-                tijd: item.aanvangstijd || ''
-            }));
-
-            vulFormulierIn(wedstrijdenVoorFormulier);
-
-        } catch (error) {
-            console.error('Fout bij ophalen Sportlink data:', error);
-            alert(`Er ging iets mis bij het ophalen van de gegevens: ${error.message}`);
-        } finally {
-            autoFillBtn.innerText = origineleTekst;
-            autoFillBtn.disabled = false;
-        }
-    });
-
-    // Functie om de opgehaalde data in de HTML-velden te plaatsen
-    function vulFormulierIn(wedstrijden) {
-        container.innerHTML = '';
-
-        wedstrijden.forEach((w) => {
-            const thuisSplits = splitsClubEnTeam(w.thuis);
-            const gastSplits = splitsClubEnTeam(w.gast);
-
-            const matchCard = document.createElement('div');
-            matchCard.className = 'match-card';
-            matchCard.innerHTML = `
-                <button type="button" class="btn-remove" onclick="removeMatch(this)" title="Verwijder wedstrijd">✕</button>
-                <div class="match-row">
-                    <div class="input-group">
-                        <label>Thuis club</label>
-                        <input type="text" list="club-list" class="thuis-input" value="${thuisSplits.club}" placeholder="Club/stad">
-                    </div>
-                    <div class="input-group team-group">
-                        <label>Team</label>
-                        <input type="text" class="thuis-team-input" value="${thuisSplits.team}" placeholder="J1">
-                    </div>
-                </div>
-                <div class="match-row">
-                    <div class="input-group">
-                        <label>Gast club</label>
-                        <input type="text" list="club-list" class="gast-input" value="${gastSplits.club}" placeholder="Club/stad">
-                    </div>
-                    <div class="input-group team-group">
-                        <label>Team</label>
-                        <input type="text" class="gast-team-input" value="${gastSplits.team}" placeholder="J1">
-                    </div>
-                </div>
-                <div class="match-row">
-                    <div class="input-group time-group">
-                        <label>Tijd</label>
-                        <input type="time" class="tijd-input" value="${w.tijd}">
-                    </div>
-                </div>
-            `;
-            container.appendChild(matchCard);
-        });
-
-        updatePreview();
-    }
-
-    // Hulpfunctie om team-toevoegingen uit de clubnaam te scheiden
-    function splitsClubEnTeam(volledigeNaam) {
-        const onderdelen = volledigeNaam.trim().split(' ');
-        if (onderdelen.length > 1) {
-            const laatsteDeel = onderdelen[onderdelen.length - 1];
-            if (/^(\d+|[A-Z]\d+)$/i.test(laatsteDeel)) {
-                return {
-                    club: onderdelen.slice(0, -1).join(' '),
-                    team: laatsteDeel
-                };
-            }
-        }
-        return { club: volledigeNaam, team: '' };
-    }
-
-    // Eerste initiële render
+    // ===== START =====
+    renderKalender();
     updatePreview();
+    laadWedstrijdDagen().catch(err => console.error(err));
 </script>
 
 </body>

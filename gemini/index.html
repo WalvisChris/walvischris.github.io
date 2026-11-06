@@ -1,60 +1,112 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu</title>
-    <style>
-        /* Dark theme achtergrond en centreren van de inhoud */
-        body {
-            background-color: #121212;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEMINI Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --surface: #17171b;
+      --border: #2a2a30;
+      --text: #f2f2f2;
+      --muted: #8a8a93;
+      --accent: #ffcc00;
+      --accent-dark: #e6b800;
+    }
 
-        /* Container voor de knoppen (onder elkaar) */
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px; /* Ruimte tussen de knoppen */
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Stijl van de knoppen */
-        .btn {
-            display: inline-block;
-            padding: 15px 40px;
-            color: #ffffff; /* Witte tekst */
-            text-decoration: none; /* Verwijdert de onderstreping van de link */
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            background-color: transparent; /* Transparante vulling */
-            border: 2px solid #6f42c1; /* Paarse outline */
-            border-radius: 12px; /* Rounded corners */
-            cursor: pointer;
-            
-            /* Vloeiende overgang voor de animatie */
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 50% 0%, #1c1a10 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 0 16px;
+    }
 
-        /* Hover effect */
-        .btn:hover {
-            background-color: #6f42c1; /* Paarse vulling bij hover */
-            transform: scale(1.08); /* Knop wordt iets groter */
-        }
-    </style>
+    header {
+      width: 100%;
+      text-align: center;
+      padding: 48px 0 24px;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    h1 .gemini {
+      color: var(--accent);
+      text-shadow: 0 0 24px rgba(255, 204, 0, 0.35);
+    }
+
+    .underline {
+      width: 64px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin: 16px auto 0;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      padding-bottom: 80px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      padding: 18px 24px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      background: var(--accent);
+      color: #111;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 204, 0, 0.25);
+      outline: none;
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      background: var(--accent-dark);
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <h1><span class="gemini">GEMINI</span> Tools</h1>
+    <div class="underline"></div>
+  </header>
 
-    <div class="button-container">
-        <a href="wedstrijden.html" class="btn">Wedstrijden</a>
-        <a href="uitslagen.html" class="btn">Uitslagen</a>
-    </div>
-
+  <main>
+    <!-- Vervang de href's door de juiste links -->
+    <a class="btn" href="wedstrijden.html">Wedstrijdoverzicht</a>
+    <a class="btn" href="goaltunes.html">Goal Tunes</a>
+    <a class="btn" href="uitslagen.html">Uitslagen</a>
+  </main>
 </body>
 </html>
