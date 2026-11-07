@@ -454,7 +454,7 @@
         .small-btn.start.paused .klok-tijd { animation: knipper 1.2s steps(2, start) infinite; }
         @keyframes knipper { to { visibility: hidden; } }
 
-        /* ===== Wedstrijdoverzicht ===== */
+        /* ===== Overzicht ===== */
         .overlay.match { --sheet-color: var(--accent); }
         .match-stand {
             display: grid;
@@ -577,8 +577,8 @@
             margin-left: 2px;
             padding: 2px 8px 2px 5px;
             border-radius: 999px;
-            background: rgba(251, 220, 44, 0.12);
-            color: var(--accent);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
             font-size: 0.8rem;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
@@ -601,7 +601,42 @@
             color: var(--muted);
         }
         .goal-row .stand b { color: var(--text); }
-        .goal-row.home .stand b { color: var(--accent); }
+
+        /* Witte variant van de schakelaar (in het overzicht) */
+        .segmented.light button.active { background: var(--text); color: #111; }
+        .match .sheet-header .segmented button { padding: 8px 16px; font-size: 0.95rem; }
+        .view[hidden] { display: none !important; }
+        .view { display: flex; flex-direction: column; min-height: 0; }
+
+        /* Topscorers */
+        .scorer-list { overflow-y: auto; display: flex; flex-direction: column; }
+        .scorer-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .scorer-row:last-child { border-bottom: none; }
+        .scorer-row .who {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            min-width: 0;
+        }
+        .scorer-row .naam { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .scorer-row .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+        .scorer-row .dot.heren { background: var(--blue); }
+        .scorer-row .dot.dames { background: var(--pink); }
+        .scorer-row .aantal {
+            font-weight: 800;
+            font-size: 1.05rem;
+            font-variant-numeric: tabular-nums;
+            min-width: 2ch;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -642,16 +677,19 @@
     <div class="tune-grid" id="tune-grid"></div>
 
     <div class="bottom-bar">
-        <button class="small-btn" id="match-btn">Wedstrijdoverzicht</button>
+        <button class="small-btn" id="match-btn">Overzicht</button>
         <button class="small-btn start" id="start-btn">Start</button>
         <button class="small-btn reset" id="reset-btn">Reset</button>
     </div>
 
-    <!-- Wedstrijdoverzicht-overlay -->
+    <!-- Overzicht-overlay -->
     <div class="overlay match" id="match-overlay" aria-hidden="true">
         <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="match-title">
             <div class="sheet-header">
-                <h2 id="match-title">Wedstrijdoverzicht</h2>
+                <div class="segmented light" id="match-tabs" role="tablist" aria-label="Weergave">
+                    <button type="button" data-view="overzicht" class="active" id="match-title">Overzicht</button>
+                    <button type="button" data-view="topscorers">Topscorers</button>
+                </div>
                 <button class="close-btn" id="match-close" aria-label="Sluiten">✕</button>
             </div>
             <div class="match-stand">
@@ -659,13 +697,18 @@
                 <span class="nums" id="match-nums">0 - 0</span>
                 <span class="team">Tegenstander</span>
             </div>
-            <div class="match-meta" id="match-meta"></div>
-            <div class="goal-list" id="goal-list"></div>
-            <div class="undo-toast" id="undo-toast" hidden>
-                <span id="undo-text">Verwijderd</span>
-                <button type="button" id="undo-btn">Ongedaan maken</button>
+            <div class="view" id="view-overzicht">
+                <div class="match-meta" id="match-meta"></div>
+                <div class="goal-list" id="goal-list"></div>
+                <div class="undo-toast" id="undo-toast" hidden>
+                    <span id="undo-text">Verwijderd</span>
+                    <button type="button" id="undo-btn">Ongedaan maken</button>
+                </div>
+                <div class="swipe-hint" id="swipe-hint">Veeg een regel opzij om hem te verwijderen</div>
             </div>
-            <div class="swipe-hint" id="swipe-hint">Veeg een regel opzij om hem te verwijderen</div>
+            <div class="view" id="view-topscorers" hidden>
+                <div class="scorer-list" id="scorer-list"></div>
+            </div>
         </div>
     </div>
 
@@ -885,7 +928,7 @@
         gridKnoppen.forEach((btn, i) => {
             toonSpelerOpKnop(btn, zoekSpeler(KNOP_GROEPEN[i], opstelling[profiel][i]));
         });
-        document.querySelectorAll('.segmented button').forEach(b => {
+        document.querySelectorAll('.vak-row .segmented button').forEach(b => {
             const actief = b.dataset.profiel === profiel;
             b.classList.toggle('active', actief);
             b.setAttribute('aria-selected', actief);
@@ -904,7 +947,7 @@
     }
 
     // Handmatig wisselen met de knoppen Aanval / Verdediging
-    document.querySelectorAll('.segmented button').forEach(b => {
+    document.querySelectorAll('.vak-row .segmented button').forEach(b => {
         b.addEventListener('click', () => {
             if (b.dataset.profiel === getoondProfiel) return;
             profielOmgedraaid = !profielOmgedraaid;
@@ -1436,6 +1479,7 @@
         '<path d="M5.3 5.3c3.6 3.6 3.6 9.8 0 13.4"/><path d="M18.7 5.3c-3.6 3.6-3.6 9.8 0 13.4"/></svg>';
 
     function renderOverzicht() {
+        if (huidigeView === 'topscorers') renderTopscorers();
         const eind = telStand();
         document.getElementById('match-nums').textContent = `${eind.home} - ${eind.away}`;
         werkMetaBij();
@@ -1497,7 +1541,60 @@
         });
     }
 
+    // ===== TOPSCORERS =====
+    function renderTopscorers() {
+        const lijst = document.getElementById('scorer-list');
+        lijst.replaceChildren();
+
+        // Alleen doelpunten van Gemini-spelers (niet de tegenstander, niet handmatig 'Gemini')
+        const tellers = {};
+        gebeurtenissen.filter(isDoelpunt).forEach(g => {
+            if (g.team !== 'home' || !g.naam || g.naam === 'Gemini') return;
+            if (!tellers[g.naam]) tellers[g.naam] = { naam: g.naam, groep: g.groep, aantal: 0 };
+            tellers[g.naam].aantal++;
+        });
+        const scorers = Object.values(tellers)
+            .sort((a, b) => b.aantal - a.aantal || a.naam.localeCompare(b.naam));
+
+        if (scorers.length === 0) {
+            lijst.appendChild(span('empty', 'Nog geen doelpunten'));
+            return;
+        }
+
+        // Simpele lijst: rondje (geslacht), naam, aantal doelpunten
+        scorers.forEach(s => {
+            const rij = document.createElement('div');
+            rij.className = 'scorer-row';
+            const wie = document.createElement('span');
+            wie.className = 'who';
+            wie.append(span('dot ' + (s.groep || ''), ''), span('naam', s.naam));
+            rij.append(wie, span('aantal', s.aantal));
+            lijst.appendChild(rij);
+        });
+    }
+
+    let huidigeView = 'overzicht';
+    function toonView(view) {
+        huidigeView = view;
+        document.querySelectorAll('#match-tabs button').forEach(b => {
+            const actief = b.dataset.view === view;
+            b.classList.toggle('active', actief);
+            b.setAttribute('aria-selected', actief);
+        });
+        document.getElementById('view-overzicht').hidden = view !== 'overzicht';
+        document.getElementById('view-topscorers').hidden = view !== 'topscorers';
+        if (view === 'topscorers') {
+            clearTimeout(undoTimer);
+            verbergUndo();
+            renderTopscorers();
+        }
+    }
+    document.querySelectorAll('#match-tabs button').forEach(b => {
+        b.addEventListener('click', () => toonView(b.dataset.view));
+    });
+
     function openOverzicht() {
+        toonView('overzicht');  // altijd eerst het overzicht
         renderOverzicht();
         matchOverlay.classList.add('open');
         matchOverlay.setAttribute('aria-hidden', 'false');
