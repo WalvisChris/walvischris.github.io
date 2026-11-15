@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft Chestroom Grouper</title>
+<style>
+  :root {
+    --bg: #121315;
+    --panel: #1a1c1f;
+    --panel-2: #222529;
+    --line: #2e3237;
+    --line-2: #3a3f45;
+    --text: #e6e8ea;
+    --muted: #8b9198;
+    --accent: #6fbf4a;      /* grass green */
+    --accent-dim: #3d6b28;
+    --danger: #d4574a;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    overflow: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button {
+    background: var(--panel-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent-dim); border-color: var(--accent); }
+  button.primary:hover { background: #4a7f31; }
+  button.icon {
+    padding: 2px 7px; line-height: 1; background: transparent; border-color: transparent; color: var(--muted);
+  }
+  button.icon:hover { color: var(--danger); border-color: var(--line-2); }
+
+  /* ---------- Library ---------- */
+  #library {
+    width: 320px; min-width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+  #library.drop-remove { outline: 2px dashed var(--danger); outline-offset: -4px; }
+  .lib-head { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+  .lib-head h1 { font-size: 15px; margin: 0 0 10px; letter-spacing: .02em; }
+  .lib-head h1 span { color: var(--muted); font-weight: 400; }
+  #search {
+    width: 100%; padding: 7px 10px;
+    background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--radius);
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+  .lib-opts { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .lib-opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  #libList { flex: 1; overflow-y: auto; padding: 6px; }
+  .lib-hint { color: var(--muted); font-size: 12px; padding: 10px 14px; border-top: 1px solid var(--line); }
+
+  .lib-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 8px; border-radius: var(--radius);
+    cursor: grab; user-select: none;
+  }
+  .lib-item:hover { background: var(--panel-2); }
+  .lib-item.used .name { color: var(--muted); }
+  .lib-item .badge {
+    margin-left: auto; font-size: 11px; color: var(--accent);
+    border: 1px solid var(--accent-dim); border-radius: 10px; padding: 0 6px;
+  }
+
+  /* textures */
+  .tex {
+    width: 32px; height: 32px; flex: none;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    background: #000;
+  }
+  .tex.missing {
+    background: conic-gradient(#f0f 25%, #000 0 50%, #f0f 0 75%, #000 0) 0 0 / 16px 16px;
+  }
+
+  /* ---------- Groups ---------- */
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .main-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .main-head .title { font-weight: 600; margin-right: auto; }
+  .main-head .title span { color: var(--muted); font-weight: 400; }
+  #groups {
+    flex: 1; overflow-y: auto; padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .group {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  }
+  .group.over { border-color: var(--accent); }
+  .group.collapsed .group-head { border-bottom-color: transparent; }
+  .group.collapsed .items { display: none; }
+  .toggle {
+    background: transparent; border: 1px solid transparent; color: var(--muted);
+    width: 26px; height: 26px; padding: 0; display: grid; place-items: center;
+  }
+  .toggle:hover { color: var(--text); border-color: var(--line-2); }
+  .toggle svg { transition: transform .15s ease; }
+  .group.collapsed .toggle svg { transform: rotate(-90deg); }
+  .group-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-bottom: 1px solid var(--line);
+  }
+  .group-name {
+    min-width: 40px; max-width: 70%;
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius);
+    padding: 4px 8px; font-weight: 600; font-size: 15px; outline: none;
+  }
+  .group-name:hover { border-color: var(--line-2); }
+  .group-name:focus { border-color: var(--accent); background: var(--bg); }
+  .group-count { color: var(--muted); font-weight: 400; font-size: 15px; white-space: nowrap; margin-right: auto; }
+  .items {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px; min-height: 64px;
+  }
+  .items:empty::before {
+    content: "Sleep blokken hierheen";
+    color: var(--muted); font-size: 13px; align-self: center; padding-left: 4px;
+  }
+  .item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--radius);
+    padding: 4px 4px 4px 4px; cursor: grab; user-select: none;
+  }
+  .item:hover { border-color: var(--muted); }
+  .item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .icon { visibility: hidden; }
+  .item:hover .icon { visibility: visible; }
+  .item.dragging { opacity: .35; }
+  .placeholder {
+    height: 42px;
+    border: 2px dashed var(--accent); border-radius: var(--radius);
+    background: rgba(111,191,74,.08);
+  }
+  .add-group {
+    border: 2px dashed var(--line-2); background: transparent; color: var(--muted);
+    padding: 16px; border-radius: 8px; text-align: center;
+  }
+  .add-group:hover { border-color: var(--accent); color: var(--text); }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 5px; border: 2px solid var(--panel); }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<aside id="library">
+  <div class="lib-head">
+    <h1>Library <span id="libCount"></span></h1>
+    <input id="search" type="search" placeholder="Zoek blok…" autocomplete="off">
+    <div class="lib-opts">
+      <label><input type="checkbox" id="hideUsed"> Verberg gebruikte</label>
+    </div>
+  </div>
+  <div id="libList"></div>
+  <div class="lib-hint">Sleep een blok naar een groep. Sleep een blok uit een groep hierheen om het te verwijderen.</div>
+</aside>
+
+<main id="main">
+  <div class="main-head">
+    <div class="title">Groepen <span id="groupCount"></span></div>
+    <button id="exportBtn" title="Download je groepen als JSON">Exporteren</button>
+    <button id="importBtn" title="Laad groepen uit een JSON-bestand">Importeren</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <button id="addGroupBtn" class="primary">+ Nieuwe groep</button>
+  </div>
+  <div id="groups"></div>
+</main>
+
+<script>
+/* =====================================================================
+   INSTELLINGEN — hier zet je je eigen blokken neer
+   ---------------------------------------------------------------------
+   De texture wordt gezocht als:  TEXTURE_DIR + naam + ".png"
+   Voorbeeld: "oak"  ->  assets/minecraft/oak.png
+   Wil je de PNG's naast dit HTML-bestand zetten? Maak TEXTURE_DIR dan "".
+   ===================================================================== */
+const TEXTURE_DIR = "assets/minecraft/";
+
+const BLOCKS = [
+    "oak",
+    "spruce",
+    "birch",
+    "jungle",
+    "acacia",
+    "dark_oak",
+    "mangrove",
+    "cherry",
+    "pale_oak",
+    "poplar",
+    "crimson",
+    "warped",
+    "bamboo",
+    "stone",
+    "smooth_stone",
+    "cobblestone",
+    "stone_bricks",
+    "granite",
+    "diorite",
+    "andesite",
+    "deepslate",
+    "tuff",
+    "dripstone",
+    "basalt",
+    "blackstone",
+    "sandstone",
+    "red_sandstone",
+    "end_stone",
+    "nether_bricks",
+    "netherrack",
+    "magma_block",
+    "soul_sand",
+    "coal",
+    "iron",
+    "copper",
+    "gold",
+    "lapis",
+    "redstone",
+    "diamond",
+    "emerald",
+    "quartz",
+    "ancient_debris",
+    "glass",
+    "wool",
+    "terracotta",
+    "concrete",
+    "concrete_powder",
+    "grass",
+    "dirt",
+    "sand",
+    "red_sand",
+    "gravel",
+    "clay",
+    "glazed_terracotta",
+    "leaves",
+    "moss",
+    "sugar_cane",
+    "hay_bale",
+    "pumpkin",
+    "melon",
+    "gunpowder",
+    "rotten_flesh",
+    "bone",
+    "string",
+    "spider_eye",
+    "ender_pearl",
+    "blaze_rod",
+    "magma_cream",
+    "ghast_tear",
+    "slime",
+    "feather",
+    "leather",
+    "seeds",
+    "meat",
+    "food",
+    "purpur",
+    "armor",
+    "tool",
+    "arrow"
+];
+
+/* ===================================================================== */
+
+const STORAGE_KEY = "chestroom-grouper-v1";
+let state = load();
+let drag = null;               // { from: "lib", name } | { from: "group", gid, index }
+const placeholder = document.createElement("div");
+placeholder.className = "placeholder";
+
+const $ = (id) => document.getElementById(id);
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (s && Array.isArray(s.groups) && s.groups.length) return s;
+  } catch (e) {}
+  return { groups: [{ id: uid(), name: "Groep 1", items: [] }] };
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function texImg(name) {
+  const img = document.createElement("img");
+  img.className = "tex";
+  img.alt = "";
+  img.draggable = false;
+  img.src = TEXTURE_DIR + encodeURIComponent(name) + ".png";
+  img.onerror = () => { img.removeAttribute("src"); img.classList.add("missing"); };
+  return img;
+}
+
+function usageCounts() {
+  const c = {};
+  for (const g of state.groups) for (const n of g.items) c[n] = (c[n] || 0) + 1;
+  return c;
+}
+
+/* ---------- Library ---------- */
+function renderLibrary() {
+  const q = $("search").value.trim().toLowerCase();
+  const hideUsed = $("hideUsed").checked;
+  const used = usageCounts();
+  const list = $("libList");
+  list.innerHTML = "";
+  let shown = 0;
+  for (const name of BLOCKS) {
+    if (q && !name.toLowerCase().includes(q)) continue;
+    if (hideUsed && used[name]) continue;
+    shown++;
+    const el = document.createElement("div");
+    el.className = "lib-item" + (used[name] ? " used" : "");
+    el.draggable = true;
+    el.appendChild(texImg(name));
+    const s = document.createElement("span");
+    s.className = "name";
+    s.textContent = name;
+    el.appendChild(s);
+    if (used[name]) {
+      const b = document.createElement("span");
+      b.className = "badge";
+      b.textContent = used[name] > 1 ? "✓ " + used[name] : "✓";
+      b.title = "Zit in " + used[name] + " groep(en)";
+      el.appendChild(b);
+    }
+    el.addEventListener("dragstart", (e) => {
+      drag = { from: "lib", name };
+      e.dataTransfer.effectAllowed = "copyMove";
+      e.dataTransfer.setData("text/plain", name);
+    });
+    el.addEventListener("dragend", endDrag);
+    list.appendChild(el);
+  }
+  $("libCount").textContent = q || hideUsed ? `(${shown}/${BLOCKS.length})` : `(${BLOCKS.length})`;
+}
+
+/* ---------- Groups ---------- */
+function renderGroups() {
+  const wrap = $("groups");
+  wrap.innerHTML = "";
+  for (const g of state.groups) {
+    const card = document.createElement("section");
+    card.className = "group" + (g.collapsed ? " collapsed" : "");
+    card.dataset.gid = g.id;
+
+    const head = document.createElement("div");
+    head.className = "group-head";
+    const toggle = document.createElement("button");
+    toggle.className = "toggle";
+    toggle.title = "In-/uitklappen";
+    toggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    toggle.addEventListener("click", () => {
+      g.collapsed = !g.collapsed;
+      card.classList.toggle("collapsed", g.collapsed);
+      save();
+    });
+    const name = document.createElement("input");
+    name.className = "group-name";
+    name.value = g.name;
+    name.placeholder = "Naam van de groep";
+    name.addEventListener("input", () => { g.name = name.value; fitInput(name); save(); });
+    name.addEventListener("keydown", (e) => { if (e.key === "Enter") name.blur(); });
+    const count = document.createElement("span");
+    count.className = "group-count";
+    count.textContent = `(${g.items.length})`;
+    count.title = g.items.length + (g.items.length === 1 ? " blok" : " blokken");
+    const del = document.createElement("button");
+    del.className = "icon";
+    del.textContent = "🗑";
+    del.title = "Groep verwijderen";
+    del.addEventListener("click", () => {
+      if (g.items.length && !confirm(`Groep "${g.name || "naamloos"}" met ${g.items.length} blokken verwijderen?`)) return;
+      state.groups = state.groups.filter((x) => x !== g);
+      if (!state.groups.length) state.groups.push({ id: uid(), name: "Groep 1", items: [] });
+      commit();
+    });
+    head.append(toggle, name, count, del);
+
+    const items = document.createElement("div");
+    items.className = "items";
+    g.items.forEach((n, i) => items.appendChild(groupItem(g, n, i)));
+
+    card.append(head, items);
+    card.addEventListener("dragover", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = drag.from === "lib" ? "copy" : "move";
+      document.querySelectorAll(".group.over").forEach((x) => x !== card && x.classList.remove("over"));
+      card.classList.add("over");
+      if (g.collapsed) { placeholder.remove(); return; }
+      const before = insertBefore(items, e.clientX, e.clientY);
+      if (before) { if (placeholder.nextSibling !== before) items.insertBefore(placeholder, before); }
+      else if (items.lastChild !== placeholder) items.appendChild(placeholder);
+    });
+    card.addEventListener("drop", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      let index = 0;
+      for (const ch of items.children) {
+        if (ch === placeholder) break;
+        if (ch.classList.contains("item") && !ch.classList.contains("dragging")) index++;
+      }
+      if (placeholder.parentNode !== items) index = g.items.length;
+      let blockName;
+      if (drag.from === "lib") {
+        blockName = drag.name;
+      } else {
+        const src = state.groups.find((x) => x.id === drag.gid);
+        blockName = src.items.splice(drag.index, 1)[0];
+      }
+      g.items.splice(index, 0, blockName);
+      endDrag();
+      commit();
+    });
+
+    wrap.appendChild(card);
+    fitInput(name);
+  }
+
+  const add = document.createElement("button");
+  add.className = "add-group";
+  add.textContent = "+ Nieuwe groep";
+  add.addEventListener("click", addGroup);
+  wrap.appendChild(add);
+
+  $("groupCount").textContent = `(${state.groups.length})`;
+}
+
+/* Maak het naamveld precies zo breed als de tekst, zodat de teller er direct achter staat */
+const measureCtx = document.createElement("canvas").getContext("2d");
+function fitInput(input) {
+  if (!measureCtx) { input.size = Math.max((input.value || input.placeholder).length, 3); return; }
+  const cs = getComputedStyle(input);
+  measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const text = input.value || input.placeholder;
+  const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  input.style.width = Math.ceil(measureCtx.measureText(text).width + pad + 2) + "px";
+}
+
+function groupItem(g, n, i) {
+  const el = document.createElement("div");
+  el.className = "item";
+  el.draggable = true;
+  el.title = n;
+  el.appendChild(texImg(n));
+  const s = document.createElement("span");
+  s.className = "name";
+  s.textContent = n;
+  const x = document.createElement("button");
+  x.className = "icon";
+  x.textContent = "✕";
+  x.title = "Uit groep halen";
+  x.addEventListener("click", () => { g.items.splice(i, 1); commit(); });
+  el.append(s, x);
+  el.addEventListener("dragstart", (e) => {
+    drag = { from: "group", gid: g.id, index: i };
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", n);
+    requestAnimationFrame(() => el.classList.add("dragging"));
+  });
+  el.addEventListener("dragend", endDrag);
+  return el;
+}
+
+/* Bepaal vóór welk item de placeholder moet (werkt ook met meerdere rijen) */
+function insertBefore(container, x, y) {
+  const els = [...container.querySelectorAll(".item:not(.dragging)")];
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (y < r.top + r.height / 2) return el;
+  }
+  return null;
+}
+
+function endDrag() {
+  drag = null;
+  placeholder.remove();
+  document.querySelectorAll(".dragging").forEach((x) => x.classList.remove("dragging"));
+  document.querySelectorAll(".group.over").forEach((x) => x.classList.remove("over"));
+  $("library").classList.remove("drop-remove");
+}
+
+function commit() { save(); renderGroups(); renderLibrary(); }
+
+function addGroup() {
+  const g = { id: uid(), name: "Groep " + (state.groups.length + 1), items: [] };
+  state.groups.push(g);
+  commit();
+  const inputs = document.querySelectorAll(".group-name");
+  const last = inputs[inputs.length - 1];
+  last.scrollIntoView({ behavior: "smooth", block: "center" });
+  last.focus(); last.select();
+}
+
+/* ---------- Library als drop-zone (verwijderen uit groep) ---------- */
+const lib = $("library");
+lib.addEventListener("dragover", (e) => {
+  if (!drag || drag.from !== "group") return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  placeholder.remove();
+  document.querySelectorAll(".group.over").forEach((x) => x.classList.remove("over"));
+  lib.classList.add("drop-remove");
+});
+lib.addEventListener("dragleave", (e) => {
+  if (!lib.contains(e.relatedTarget)) lib.classList.remove("drop-remove");
+});
+lib.addEventListener("drop", (e) => {
+  if (!drag || drag.from !== "group") return;
+  e.preventDefault();
+  const g = state.groups.find((x) => x.id === drag.gid);
+  g.items.splice(drag.index, 1);
+  endDrag();
+  commit();
+});
+
+/* ---------- Export / import ---------- */
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "chestroom-groepen.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.groups)) throw new Error();
+    data.groups.forEach((g) => { g.id = g.id || uid(); g.items = g.items || []; g.name = g.name ?? ""; });
+    state = data;
+    commit();
+  } catch (err) {
+    alert("Dit bestand kon niet worden ingelezen.");
+  }
+  e.target.value = "";
+});
+
+$("addGroupBtn").addEventListener("click", addGroup);
+$("search").addEventListener("input", renderLibrary);
+$("hideUsed").addEventListener("change", renderLibrary);
+
+renderGroups();
+renderLibrary();
+</script>
+</body>
+</html>
