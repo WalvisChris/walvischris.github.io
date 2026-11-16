@@ -270,7 +270,9 @@
             border-radius: 10px;
             border: 1px solid var(--border);
             background: #1f1f24;
+            cursor: pointer;
         }
+        .preview-hint { text-align: center; color: var(--muted); font-size: 0.85rem; margin: -6px 0 16px; }
         .preview-card .btn-primary { display: block; width: 100%; max-width: 360px; margin: 0 auto; }
 
         @media (max-width: 480px) {
@@ -324,12 +326,18 @@
 
 <!-- Preview -->
 <div class="card preview-card">
-    <div class="card-header"><h2>Live preview (9:16)</h2></div>
+    <div class="card-header">
+        <h2>Live preview (9:16)</h2>
+        <button type="button" class="btn btn-outline btn-small" id="replay-btn">↻ Opnieuw afspelen</button>
+    </div>
     <div id="canvases-wrapper"></div>
-    <button type="button" class="btn btn-primary" id="download-btn">Alle afbeeldingen downloaden</button>
+    <p class="preview-hint">Klik op een preview om de animatie opnieuw af te spelen. Video's duren 10 seconden.</p>
+    <button type="button" class="btn btn-primary" id="download-btn">Alle video's downloaden (MP4)</button>
 </div>
 
 <script src="clubs.js"></script>
+<!-- MP4-muxer: zet de gecodeerde frames in een .mp4-bestand -->
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js"></script>
 
 <script>
     // ===== CONFIGURATIE =====
@@ -337,6 +345,17 @@
     const SPORTLINK_BASE = 'https://data.sportlink.com';
     const DAGEN_VOORUIT = 120; // hoeveel dagen programma ophalen
     const DAGEN_TERUG = 60;    // hoeveel dagen uitslagen ophalen (voor eerdere dagen in de maand)
+
+    // ===== VIDEO / ANIMATIE =====
+    const VIDEO_DUUR = 10;             // lengte van de video in seconden
+    const FPS = 30;                    // beelden per seconde
+    const VIDEO_BITRATE = 6_000_000;   // kwaliteit (bits per seconde)
+    const START_VERTRAGING = 0.15;     // even wachten voordat de eerste wedstrijd binnenkomt
+    const FADE_DUUR = 0.6;             // duur van één fade-in (sec)
+    const VERTRAGING_WEDSTRIJD = 0.2;  // tijd tussen de start van opeenvolgende wedstrijden
+    const VERTRAGING_REGEL = 0.07;     // kleine vertraging tussen thuis / gast / tijd+stad
+    const SCHUIF_AFSTAND = 220;        // hoeveel px de tekst vanaf links inschuift
+    const MAX_PER_PAGINA = 3;
 
     const container = document.getElementById('matches-container');
     const addButton = document.getElementById('add-match-btn');
@@ -419,6 +438,7 @@
         geselecteerdeDatum = key;
         renderKalender();
         updatePreview();
+        speelPreviewAf();
     }
 
     document.getElementById('cal-prev').addEventListener('click', () => {
@@ -588,6 +608,7 @@
             }, i > 0));
         });
         updatePreview();
+        speelPreviewAf();
     }
 
     // ===== AUTOMATISCH INVULLEN =====
@@ -623,7 +644,7 @@
         }
     });
 
-    // ===== PREVIEW =====
+    // ===== DATUMTEKST =====
     function getGekozenDatumTekst() {
         const d = fromKey(geselecteerdeDatum);
         const dagen = ['ZONDAG','MAANDAG','DINSDAG','WOENSDAG','DONDERDAG','VRIJDAG','ZATERDAG'];
@@ -631,7 +652,13 @@
         return `${dagen[d.getDay()]} ${d.getDate()} ${maanden[d.getMonth()]}`;
     }
 
-    function updatePreview() {
+    // ===== PREVIEW (geanimeerd) =====
+    let huidigePaginas = [[]];
+    let previewCanvassen = [];
+    let previewStart = performance.now();
+    let animatieLoopt = false;
+
+    function verzamelWedstrijden() {
         const alleWedstrijden = [];
         document.querySelectorAll('.match-card').forEach(card => {
             const thuisVal = card.querySelector('.thuis-input').value;
@@ -652,39 +679,82 @@
                 });
             }
         });
+        return alleWedstrijden;
+    }
 
-        const maxPerPagina = 3;
+    function updatePreview() {
+        const alleWedstrijden = verzamelWedstrijden();
         const paginas = [];
-        for (let i = 0; i < alleWedstrijden.length; i += maxPerPagina) {
-            paginas.push(alleWedstrijden.slice(i, i + maxPerPagina));
+        for (let i = 0; i < alleWedstrijden.length; i += MAX_PER_PAGINA) {
+            paginas.push(alleWedstrijden.slice(i, i + MAX_PER_PAGINA));
         }
         if (paginas.length === 0) paginas.push([]);
+        huidigePaginas = paginas;
 
-        canvasesWrapper.innerHTML = '';
-        paginas.forEach((pagina, idx) => {
-            const card = document.createElement('div');
-            card.className = 'canvas-card';
-            if (paginas.length > 1) {
-                const h = document.createElement('h3');
-                h.innerText = `Post ${idx + 1}`;
-                card.appendChild(h);
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = 1080;
-            canvas.height = 1920;
-            canvas.className = 'preview-canvas';
-            card.appendChild(canvas);
-            canvasesWrapper.appendChild(card);
+        // Canvassen alleen opnieuw opbouwen als het aantal posts verandert
+        if (previewCanvassen.length !== paginas.length) {
+            canvasesWrapper.innerHTML = '';
+            previewCanvassen = paginas.map((_, idx) => {
+                const card = document.createElement('div');
+                card.className = 'canvas-card';
+                if (paginas.length > 1) {
+                    const h = document.createElement('h3');
+                    h.innerText = `Video ${idx + 1}`;
+                    card.appendChild(h);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = 1080;
+                canvas.height = 1920;
+                canvas.className = 'preview-canvas';
+                canvas.title = 'Klik om opnieuw af te spelen';
+                canvas.addEventListener('click', speelPreviewAf);
+                card.appendChild(canvas);
+                canvasesWrapper.appendChild(card);
+                return canvas;
+            });
+        }
+        tekenAllePreviews(huidigePreviewTijd());
+    }
 
-            const ctx = canvas.getContext('2d');
-            if (bgLoaded) {
-                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = '#1e293b';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-            tekenWedstrijden(ctx, pagina);
+    function huidigePreviewTijd() {
+        return (performance.now() - previewStart) / 1000;
+    }
+
+    function animatieEinde() {
+        return START_VERTRAGING + (MAX_PER_PAGINA - 1) * VERTRAGING_WEDSTRIJD + 2 * VERTRAGING_REGEL + FADE_DUUR;
+    }
+
+    function tekenAllePreviews(t) {
+        previewCanvassen.forEach((canvas, i) => {
+            tekenFrame(canvas.getContext('2d'), huidigePaginas[i] || [], t);
         });
+    }
+
+    function speelPreviewAf() {
+        previewStart = performance.now();
+        if (animatieLoopt) return;
+        animatieLoopt = true;
+        const stap = () => {
+            const t = huidigePreviewTijd();
+            tekenAllePreviews(t);
+            if (t < animatieEinde()) requestAnimationFrame(stap);
+            else animatieLoopt = false;
+        };
+        requestAnimationFrame(stap);
+    }
+    document.getElementById('replay-btn').addEventListener('click', speelPreviewAf);
+
+    // Tekent één volledig beeld (achtergrond + tekst) op tijdstip t (seconden)
+    function tekenFrame(ctx, pagina, t) {
+        const { width, height } = ctx.canvas;
+        ctx.globalAlpha = 1;
+        if (bgLoaded) {
+            ctx.drawImage(bgImg, 0, 0, width, height);
+        } else {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, width, height);
+        }
+        tekenWedstrijden(ctx, pagina, t);
     }
 
     function tekenAangepasteTekst(ctx, tekst, x, y, maxBreedte, basisGrootte, fontFamilie, kleur) {
@@ -702,10 +772,27 @@
         return (naam || '').toUpperCase().includes('GEMINI');
     }
 
-    function tekenWedstrijden(ctx, wedstrijden) {
+    // 0 → 1 met ease-out, vanaf het moment 'start'
+    function voortgang(t, start) {
+        const p = Math.min(Math.max((t - start) / FADE_DUUR, 0), 1);
+        return 1 - Math.pow(1 - p, 3);
+    }
+
+    // Tekent iets met fade + inschuiven vanaf links
+    function metFade(ctx, p, tekenFn) {
+        if (p <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = p;
+        ctx.translate(-(1 - p) * SCHUIF_AFSTAND, 0);
+        tekenFn();
+        ctx.restore();
+    }
+
+    function tekenWedstrijden(ctx, wedstrijden, t = Infinity) {
         const geminiGeel = '#fbdc2c';
         const midden = ctx.canvas.width / 2;
 
+        // Titel en datum staan stil
         ctx.textAlign = 'center';
         ctx.font = '135px HeadlineFont, Arial';
         ctx.fillStyle = geminiGeel;
@@ -722,44 +809,185 @@
 
         wedstrijden.forEach((w, idx) => {
             const y = startY + idx * blokHoogte;
+            const basis = START_VERTRAGING + idx * VERTRAGING_WEDSTRIJD;
 
             const tG = isGemini(w.thuis);
-            tekenAangepasteTekst(ctx, w.thuis, startX, y, maxBreedte, 80,
-                tG ? 'GeminiFont, Arial' : 'CairoFont, Arial', tG ? geminiGeel : '#ffffff');
+            metFade(ctx, voortgang(t, basis), () =>
+                tekenAangepasteTekst(ctx, w.thuis, startX, y, maxBreedte, 80,
+                    tG ? 'GeminiFont, Arial' : 'CairoFont, Arial', tG ? geminiGeel : '#ffffff'));
 
             const gG = isGemini(w.gast);
-            tekenAangepasteTekst(ctx, w.gast, startX, y + 95, maxBreedte, 80,
-                gG ? 'GeminiFont, Arial' : 'CairoFont, Arial', gG ? geminiGeel : '#ffffff');
+            metFade(ctx, voortgang(t, basis + VERTRAGING_REGEL), () =>
+                tekenAangepasteTekst(ctx, w.gast, startX, y + 95, maxBreedte, 80,
+                    gG ? 'GeminiFont, Arial' : 'CairoFont, Arial', gG ? geminiGeel : '#ffffff'));
 
             const details = [w.tijd, w.stad].filter(Boolean);
             if (details.length) {
-                ctx.font = '42px CairoFont, Arial';
-                ctx.fillStyle = '#e2e8f0';
-                ctx.fillText(details.join(' - '), startX, y + 165);
+                metFade(ctx, voortgang(t, basis + 2 * VERTRAGING_REGEL), () => {
+                    ctx.font = '42px CairoFont, Arial';
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillText(details.join(' - '), startX, y + 165);
+                });
             }
         });
     }
 
+    // ===== VIDEO RENDEREN =====
+    const wacht = ms => new Promise(r => setTimeout(r, ms));
+
+    function maakVideoCanvas() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1920;
+        return canvas;
+    }
+
+    async function kiesEncoderConfig(width, height) {
+        // H.264 profielen/levels van hoog naar laag; 1080x1920 heeft minimaal level 4.0 nodig
+        const codecs = ['avc1.640033', 'avc1.640032', 'avc1.640028', 'avc1.4d0033', 'avc1.4d0028', 'avc1.42003e', 'avc1.420028'];
+        for (const codec of codecs) {
+            const config = { codec, width, height, bitrate: VIDEO_BITRATE, framerate: FPS };
+            try {
+                const res = await VideoEncoder.isConfigSupported(config);
+                if (res.supported) return config;
+            } catch (e) { /* volgende proberen */ }
+        }
+        return null;
+    }
+
+    // Snelste en nauwkeurigste route: WebCodecs (Chrome, Edge, Safari, nieuwe Firefox)
+    async function renderMetWebCodecs(pagina, onVoortgang) {
+        const canvas = maakVideoCanvas();
+        const ctx = canvas.getContext('2d');
+        const config = await kiesEncoderConfig(canvas.width, canvas.height);
+        if (!config) throw new Error('Geen H.264-encoder beschikbaar');
+
+        const muxer = new Mp4Muxer.Muxer({
+            target: new Mp4Muxer.ArrayBufferTarget(),
+            video: { codec: 'avc', width: canvas.width, height: canvas.height, frameRate: FPS },
+            fastStart: 'in-memory'
+        });
+
+        let encoderFout = null;
+        const encoder = new VideoEncoder({
+            output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+            error: e => { encoderFout = e; }
+        });
+        encoder.configure(config);
+
+        const totaalFrames = VIDEO_DUUR * FPS;
+        const frameDuur = 1e6 / FPS; // microseconden
+        for (let i = 0; i < totaalFrames; i++) {
+            if (encoderFout) throw encoderFout;
+            tekenFrame(ctx, pagina, i / FPS);
+            const frame = new VideoFrame(canvas, {
+                timestamp: Math.round(i * frameDuur),
+                duration: Math.round(frameDuur)
+            });
+            encoder.encode(frame, { keyFrame: i % (FPS * 2) === 0 });
+            frame.close();
+
+            while (encoder.encodeQueueSize > 8) await wacht(2);
+            if (i % 10 === 0) { onVoortgang(i / totaalFrames); await wacht(0); }
+        }
+        await encoder.flush();
+        if (encoderFout) throw encoderFout;
+        encoder.close();
+        muxer.finalize();
+        onVoortgang(1);
+        return { blob: new Blob([muxer.target.buffer], { type: 'video/mp4' }), ext: 'mp4' };
+    }
+
+    // Terugvaloptie: realtime opnemen met MediaRecorder (duurt 10 sec per video)
+    async function renderMetMediaRecorder(pagina, onVoortgang) {
+        const canvas = maakVideoCanvas();
+        const ctx = canvas.getContext('2d');
+        tekenFrame(ctx, pagina, 0);
+
+        const types = ['video/mp4;codecs=avc1.640033', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+        const mimeType = typeof MediaRecorder !== 'undefined' && types.find(t => MediaRecorder.isTypeSupported(t));
+        if (!mimeType) throw new Error('Deze browser kan geen video maken. Gebruik Chrome, Edge of Safari.');
+
+        const stream = canvas.captureStream(FPS);
+        const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: VIDEO_BITRATE });
+        const stukken = [];
+        recorder.ondataavailable = e => { if (e.data.size) stukken.push(e.data); };
+        const gestopt = new Promise(r => { recorder.onstop = r; });
+
+        recorder.start(250);
+        const start = performance.now();
+        await new Promise(resolve => {
+            const stap = () => {
+                const t = (performance.now() - start) / 1000;
+                tekenFrame(ctx, pagina, Math.min(t, VIDEO_DUUR));
+                onVoortgang(Math.min(t / VIDEO_DUUR, 1));
+                if (t < VIDEO_DUUR) requestAnimationFrame(stap); else resolve();
+            };
+            requestAnimationFrame(stap);
+        });
+        recorder.stop();
+        await gestopt;
+        stream.getTracks().forEach(tr => tr.stop());
+        return { blob: new Blob(stukken, { type: mimeType }), ext: mimeType.startsWith('video/mp4') ? 'mp4' : 'webm' };
+    }
+
+    async function renderVideo(pagina, onVoortgang) {
+        const kanWebCodecs = typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined' && typeof Mp4Muxer !== 'undefined';
+        if (kanWebCodecs) {
+            try {
+                return await renderMetWebCodecs(pagina, onVoortgang);
+            } catch (err) {
+                console.warn('WebCodecs mislukt, terugval op MediaRecorder:', err);
+            }
+        }
+        return renderMetMediaRecorder(pagina, onVoortgang);
+    }
+
+    function downloadBlob(blob, bestandsnaam) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = bestandsnaam;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+
     // ===== DOWNLOAD =====
-    downloadButton.addEventListener('click', () => {
-        const canvases = document.querySelectorAll('.preview-canvas');
+    downloadButton.addEventListener('click', async () => {
+        const origineel = downloadButton.innerText;
+        downloadButton.disabled = true;
+        const paginas = huidigePaginas.slice();
         const v = new Date();
         const datumString = `${String(v.getDate()).padStart(2, '0')}.${String(v.getMonth() + 1).padStart(2, '0')}.${v.getFullYear()}`;
-        canvases.forEach((canvas, i) => {
-            setTimeout(() => {
-                const link = document.createElement('a');
-                link.download = `gemini_wedstrijden_${datumString}_${i + 1}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.95);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            }, i * 300);
-        });
+        let webmGebruikt = false;
+        try {
+            for (let i = 0; i < paginas.length; i++) {
+                const label = paginas.length > 1 ? `Video ${i + 1}/${paginas.length} maken… ` : 'Video maken… ';
+                const resultaat = await renderVideo(paginas[i], p => {
+                    downloadButton.innerText = `${label}${Math.round(p * 100)}%`;
+                });
+                if (resultaat.ext !== 'mp4') webmGebruikt = true;
+                downloadBlob(resultaat.blob, `gemini_wedstrijden_${datumString}_${i + 1}.${resultaat.ext}`);
+                await wacht(300);
+            }
+            if (webmGebruikt) {
+                alert('Let op: deze browser kan geen MP4 maken, de video is als WebM opgeslagen. Gebruik Chrome, Edge of Safari voor MP4.');
+            }
+        } catch (err) {
+            console.error('Fout bij maken video:', err);
+            alert(`Er ging iets mis bij het maken van de video: ${err.message}`);
+        } finally {
+            downloadButton.innerText = origineel;
+            downloadButton.disabled = false;
+        }
     });
 
     // ===== START =====
     renderKalender();
     updatePreview();
+    speelPreviewAf();
     laadWedstrijdDagen().catch(err => console.error(err));
 </script>
 
